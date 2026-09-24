@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package `in`.ankitsaroj.diable.ui.home
 
 import android.content.Context

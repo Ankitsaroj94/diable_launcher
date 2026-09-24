@@ -97,6 +97,19 @@ It exists because a launcher is the most personal app on a phone, and it should 
 |:---:|:---:|:---:|:---:|
 | <img src="docs/screenshots/10-productivity.png" width="180"> | <img src="docs/screenshots/11-theme-editor.png" width="180"> | <img src="docs/screenshots/11-theme-editor-dark.png" width="180"> | <img src="docs/screenshots/12-icon-styles.png" width="180"> |
 
+## Download
+
+Grab the latest signed APK from the
+**[Releases page](https://github.com/Ankitsaroj94/diable_launcher/releases/latest)**,
+install it, press Home and choose **Diable Launcher**.
+
+Releases are signed with the project key. You can check an APK with
+`apksigner verify --print-certs diable-launcher-*.apk`; the certificate SHA-256 should be:
+
+```
+F0:D2:C0:46:67:06:51:3F:03:EA:AA:6F:D9:9A:55:34:42:42:77:B5:C3:FA:1B:53:A3:AC:98:4E:D8:F7:85:BD
+```
+
 ## Getting started
 
 ### Install from source
@@ -108,6 +121,11 @@ cd diable_launcher
 ./gradlew assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+To build a signed release instead, put your own keystore details in
+`~/.gradle/gradle.properties` (`DIABLE_STORE_FILE`, `DIABLE_STORE_PASSWORD`,
+`DIABLE_KEY_ALIAS`, `DIABLE_KEY_PASSWORD`) and run `./gradlew assembleRelease`. Without
+them the release APK is built unsigned.
 
 Then press Home and choose **Diable Launcher**, or set it from the command line:
 

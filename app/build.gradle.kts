@@ -18,8 +18,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release signing comes from ~/.gradle/gradle.properties (DIABLE_STORE_FILE, …), never
+    // from the repo. Without those properties the release build is simply left unsigned.
+    val storeFilePath = providers.gradleProperty("DIABLE_STORE_FILE").orNull
+    signingConfigs {
+        if (storeFilePath != null) {
+            create("release") {
+                storeFile = file(storeFilePath)
+                storePassword = providers.gradleProperty("DIABLE_STORE_PASSWORD").get()
+                keyAlias = providers.gradleProperty("DIABLE_KEY_ALIAS").get()
+                keyPassword = providers.gradleProperty("DIABLE_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (storeFilePath != null) signingConfig = signingConfigs.getByName("release")
             // A launcher is always resident: shrinking and removing unused resources
             // cuts both install size and the memory the DEX/resources occupy.
             isMinifyEnabled = true
