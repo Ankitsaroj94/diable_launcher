@@ -1,0 +1,74 @@
+name: Build and Release Diable Launcher (APK + AAB with Environment Management)
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+      
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+      
+      - name: Generate version name
+        id: version
+        run: echo "VERSION_NAME=$(date +'%Y.%m.%d.%H%M')" >> $GITHUB_OUTPUT
+      
+      # --- Build APK ---
+      - name: Build Release APK
+        run: ./gradlew assembleDebug
+     
+      - name: let's see where are the files
+        run: |
+          ls -lah .
+          ls -lah app
+          ls -lah app/build
+          ls -lah app/build/outputs
+          ls -lah app/build/outputs/apk
+          ls -lah app/build/outputs/apk/debug
+      - name: Rename APK
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk \
+             app/build/outputs/apk/debug/diable-launcher-${{ steps.version.outputs.VERSION_NAME }}.apk
+      
+      # --- Upload as artifacts ---
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diable-launcher-APK-${{ steps.version.outputs.VERSION_NAME }}
+          path: app/build/outputs/apk/debug/diable-launcher-${{ steps.version.outputs.VERSION_NAME }}.apk
+          retention-days: 7
+      
+      # --- GitHub Release ---
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION_NAME }}
+          name: diable-launcher v${{ steps.version.outputs.VERSION_NAME }}
+          body: |
+            Automated build created on $(date)
+            
+            Changes in this build:
+            - Latest commit: ${{ github.event.head_commit.message }}
+            - Branch: ${{ github.ref_name }}
+          files: |
+            app/build/outputs/apk/debug/diable-launcher-${{ steps.version.outputs.VERSION_NAME }}.apk
+            app/build/outputs/bundle/debug/diable-launcher-${{ steps.version.outputs.VERSION_NAME }}.aab
+          generate_release_notes: true
