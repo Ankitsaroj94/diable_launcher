@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Diable Launcher icon — foreground.
+
+  Original artwork, not derived from any existing character design: a stylised kicking
+  leg swept diagonally, trailing flame. Kept to bold silhouettes so it still reads at
+  48dp, and drawn inside the 72dp adaptive-icon safe zone (18dp..90dp).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Flame trail sweeping up behind the kick. -->
+    <path android:pathData="M40,80 C34,64 40,50 56,40 C50,54 54,60 62,64 C58,70 56,76 58,84 Z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:startX="40"
+                android:startY="84"
+                android:endX="60"
+                android:endY="38"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFFF4D1C" />
+                <item android:offset="0.6" android:color="#FFFF8A2B" />
+                <item android:offset="1.0" android:color="#FFFFD166" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Outer flame licks. -->
+    <path
+        android:pathData="M64,44 C72,36 74,28 72,20 C80,28 82,40 74,50 Z"
+        android:fillColor="#FFFF8A2B" />
+    <path
+        android:pathData="M30,74 C24,68 22,60 25,52 C29,60 34,64 39,66 Z"
+        android:fillColor="#FFFF4D1C" />
+
+    <!-- The leg: thigh, knee, shin, driving up to the right. -->
+    <path
+        android:pathData="M34,86 L46,58 C48,53 54,51 58,54 C62,56 63,62 61,66 L52,88 C50,92 44,93 40,91 C36,89 33,89 34,86 Z"
+        android:fillColor="#FF1B2340" />
+    <path
+        android:pathData="M56,56 L78,26 C81,22 87,22 90,25 C93,28 93,34 90,37 L68,66 C65,70 59,70 56,67 C53,64 53,59 56,56 Z"
+        android:fillColor="#FF232C4F" />
+
+    <!-- Shoe striking through the flame. -->
+    <path
+        android:pathData="M84,20 C90,15 98,16 100,21 C102,26 98,31 92,32 L82,34 C79,34 77,31 78,28 Z"
+        android:fillColor="#FFB4C5FF" />
+
+    <!-- Impact spark at the point of contact. -->
+    <path
+        android:pathData="M88,18 L91,10 L94,18 L102,21 L94,24 L91,32 L88,24 L80,21 Z"
+        android:fillColor="#FFFFD166" />
+</vector>

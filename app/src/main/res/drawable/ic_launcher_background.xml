@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Diable Launcher icon — background.
+  Original artwork: an ember glow rising out of deep navy, matching the launcher's palette.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:startX="18"
+                android:startY="10"
+                android:endX="90"
+                android:endY="100"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF111A33" />
+                <item android:offset="0.55" android:color="#FF0A122A" />
+                <item android:offset="1.0" android:color="#FF2A1430" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Heat bloom behind the kick. -->
+    <path android:pathData="M54,92m-34,0a34,34 0,1 1,68 0a34,34 0,1 1,-68 0">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="92"
+                android:gradientRadius="34"
+                android:type="radial">
+                <item android:offset="0.0" android:color="#66FF7A18" />
+                <item android:offset="1.0" android:color="#00FF7A18" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

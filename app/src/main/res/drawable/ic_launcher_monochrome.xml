@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Flat silhouette of the kick, for Android 13+ themed icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="#FFFFFFFF">
+
+    <path
+        android:pathData="M34,86 L46,58 C48,53 54,51 58,54 C62,56 63,62 61,66 L52,88 C50,92 44,93 40,91 C36,89 33,89 34,86 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M56,56 L78,26 C81,22 87,22 90,25 C93,28 93,34 90,37 L68,66 C65,70 59,70 56,67 C53,64 53,59 56,56 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M84,20 C90,15 98,16 100,21 C102,26 98,31 92,32 L82,34 C79,34 77,31 78,28 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M40,80 C34,64 40,50 56,40 C50,54 54,60 62,64 C58,70 56,76 58,84 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>
