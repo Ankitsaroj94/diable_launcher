@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.Dispatchers
@@ -110,15 +111,18 @@ fun AppIcon(
         val accentArgb = accentColor.toArgb()
         // Cached icons draw immediately; new ones render off the main thread so a jump to
         // an unseen letter never blocks input while dozens of icons rasterise.
-        val bitmap by produceState(
-            initialValue = drawable?.let { IconRenderer.peek(app.packageName, it, iconStyle, accentArgb) },
-            app.packageName, drawable, iconStyle, accentArgb,
-        ) {
-            if (value == null && drawable != null) {
-                value = withContext(IconRenderer.dispatcher) {
-                    IconRenderer.get(app.packageName, drawable, iconStyle, accentArgb, app.fromIconPack)
+        // State is keyed to the app, so a reused row starts from this app's cached icon
+        // (or nothing) — never the previous app's picture for a frame.
+        val bitmap = key(app.packageName, drawable, iconStyle, accentArgb) {
+            produceState(
+                initialValue = drawable?.let { IconRenderer.peek(app.packageName, it, iconStyle, accentArgb) },
+            ) {
+                if (value == null && drawable != null) {
+                    value = withContext(IconRenderer.dispatcher) {
+                        IconRenderer.get(app.packageName, drawable, iconStyle, accentArgb, app.fromIconPack)
+                    }
                 }
-            }
+            }.value
         }
         val rendered = bitmap
         if (rendered == null) {

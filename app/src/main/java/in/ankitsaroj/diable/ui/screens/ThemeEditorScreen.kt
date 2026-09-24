@@ -265,7 +265,8 @@ private fun ThemePreviewFrame(
             .clip(RoundedCornerShape(19.dp))
             .border(2.dp, Color.White, RoundedCornerShape(19.dp))
             .wallpaperBackground(prefs.wallpaperUri)
-            .background(DiableBg.copy(alpha = if (prefs.dimWallpaper) 0.45f else 0.15f)),
+            // The same black dim home uses; a theme-coloured wash turned pale in light mode.
+            .background(Color.Black.copy(alpha = if (prefs.dimWallpaper) 0.35f else 0f)),
     ) {
         Column(modifier = Modifier.padding(start = 24.dp, top = 118.dp)) {
             // Mirror the real clock style and live time rather than a hardcoded sample.
