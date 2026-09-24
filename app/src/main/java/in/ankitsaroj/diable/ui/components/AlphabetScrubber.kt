@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -256,7 +257,10 @@ fun AlphabetScrubber(
         }
     }
 
-    val scrubbing = touchY != null && !cancelled && selectedLetter != null
+    // Read the letter under the finger directly; selectedLetter settles a frame later
+    // (it drives haptics and the jump on release), which showed the previous letter's apps.
+    val shownLetter = if (touchY != null) letterAtPeak ?: selectedLetter else null
+    val scrubbing = touchY != null && !cancelled && shownLetter != null
     var boxOrigin by remember { mutableStateOf(Offset.Zero) }
 
     Box(modifier = modifier.fillMaxSize().onGloballyPositioned { boxOrigin = it.positionInRoot() }) {
@@ -333,16 +337,20 @@ fun AlphabetScrubber(
                 modifier = Modifier
                     .padding(start = 48.dp, end = listContentEndPadding, top = 140.dp),
             ) {
-                when (val letter = selectedLetter) {
+                when (val letter = shownLetter) {
                     STAR -> favorites.filterIsInstance<FavoriteEntry.App>().forEach {
-                        HomeAppRow(it.app, accentColor, textColor, iconStyle, actions = actions)
+                        key(it.app.packageName) {
+                            HomeAppRow(it.app, accentColor, textColor, iconStyle, actions = actions)
+                        }
                     }
                     FOOTER -> LetterHeader("Diable Launcher", textColor)
                     null -> Unit
                     else -> {
                         LetterHeader(letter.toString(), textColor)
                         groupedApps[letter].orEmpty().forEach { app ->
-                            HomeAppRow(app, accentColor, textColor, iconStyle, actions = actions)
+                            key(app.packageName) {
+                                HomeAppRow(app, accentColor, textColor, iconStyle, actions = actions)
+                            }
                         }
                     }
                 }

@@ -89,7 +89,7 @@ import `in`.ankitsaroj.diable.ui.components.LavenderIconCircle
 import `in`.ankitsaroj.diable.ui.components.DiableBottomSheet
 import `in`.ankitsaroj.diable.ui.components.DiableSettingCard
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
-import `in`.ankitsaroj.diable.ui.theme.DiableSearchPill
+import `in`.ankitsaroj.diable.ui.theme.DiableNavy
 import `in`.ankitsaroj.diable.ui.theme.DiableTextMuted
 import `in`.ankitsaroj.diable.util.evaluateMath
 import `in`.ankitsaroj.diable.util.looksLikeMath
@@ -421,7 +421,9 @@ private fun SearchBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .background(DiableSearchPill, RoundedCornerShape(percent = 50))
+            // Over the wallpaper in both modes, like home: the pill stays dark so its white
+            // text reads. The light-theme pill left typed text white on pale.
+            .background(DiableNavy.copy(alpha = 0.92f), RoundedCornerShape(percent = 50))
             .padding(start = 24.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
