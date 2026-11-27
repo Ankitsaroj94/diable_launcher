@@ -109,8 +109,8 @@ Grab the latest signed APK from the
 **[Releases page](https://github.com/Ankitsaroj94/diable_launcher/releases/latest)**,
 install it, press Home and choose **Diable Launcher**.
 
-Use **`diable-launcher-v1.5.apk`** (the standard build) when installing from a browser,
-chat or file manager, including on phones in India. Use **`diable-launcher-v1.5-full.apk`**
+Use **`diable-launcher-v1.6.apk`** (the standard build) when installing from a browser,
+chat or file manager, including on phones in India. Use **`diable-launcher-v1.6-full.apk`**
 only if you want notification dots, quick replies, the media player and Quick Lock, and
 Play Protect is not blocking that file. The two builds are explained below.
 
@@ -137,9 +137,9 @@ notification listener (dots, the swipe-right preview, quick replies, media contr
 Notification Summary) and an accessibility service (Quick Lock, which only calls
 `GLOBAL_ACTION_LOCK_SCREEN` and reads no screen content).
 
-From v1.5 there are two release APKs. They share the application id
-`in.ankitsaroj.diable`. The standard build is version code 6, version name `1.5`.
-The full build is version code 7, version name `1.5-full` (shown in Diable settings),
+From v1.6 there are two release APKs. They share the application id
+`in.ankitsaroj.diable`. The standard build is version code 8, version name `1.6`.
+The full build is version code 9, version name `1.6-full` (shown in Diable settings),
 so it can replace a standard install and keep your data. The standard APK will not
 install over the full one; uninstall first, or restore a backup, if you need to go
 back.
@@ -149,7 +149,7 @@ back.
 | standard (default) | `standard` | `app/build/outputs/apk/standard/release/app-standard-release.apk` | No notification listener and no accessibility service. Play Protect can install it. Notification dots, quick replies, the media player, Notification Summary and Quick Lock are absent; the rest of the launcher is unchanged. |
 | full | `full` | `app/build/outputs/apk/full/release/app-full-release.apk` | Those features work, the same way they did in v1.4. Play Protect may block this APK in the regions above. |
 
-Publish the standard file as `diable-launcher-v1.5.apk` and the full file as `diable-launcher-v1.5-full.apk`. With the release keystore configured those files are `app-standard-release.apk` and `app-full-release.apk`. Without it, Gradle leaves them unsigned and adds `-unsigned` to the name.
+Publish the standard file as `diable-launcher-v1.6.apk` and the full file as `diable-launcher-v1.6-full.apk`. With the release keystore configured those files are `app-standard-release.apk` and `app-full-release.apk`. Without it, Gradle leaves them unsigned and adds `-unsigned` to the name.
 
 The services are not in the default merged manifest at all, including permissions pulled
 in by libraries. A Gradle check fails `assembleStandardRelease` if that manifest ever

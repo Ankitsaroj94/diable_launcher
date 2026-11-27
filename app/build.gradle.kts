@@ -16,7 +16,7 @@ plugins {
 // standard uses this code. full is one higher so it can replace the sideload APK
 // of the same release without wiping data. The next release must set this higher
 // than the previous full flavor (this value + 1).
-val releaseVersionCode = 6
+val releaseVersionCode = 8
 
 android {
     namespace = "in.ankitsaroj.diable"
@@ -27,7 +27,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = releaseVersionCode
-        versionName = "1.5"
+        versionName = "1.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

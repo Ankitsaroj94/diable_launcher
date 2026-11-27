@@ -151,7 +151,7 @@ private data class ChangelogEntry(val version: String, val date: String, val cha
 
 private val Changelog = listOf(
     ChangelogEntry(
-        "1.5", "Nov 2026",
+        "1.6", "Nov 2026",
         listOf(
             "The default install no longer declares a notification listener or an accessibility service, so Play Protect can allow sideloading",
             "Notification dots, quick replies, the media player, Notification Summary and Quick Lock stay in the full build",
