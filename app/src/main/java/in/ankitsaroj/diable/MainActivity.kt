@@ -14,6 +14,7 @@ import `in`.ankitsaroj.diable.data.DiablePrefs
 import `in`.ankitsaroj.diable.data.wellbeing.UsageBreaker
 import `in`.ankitsaroj.diable.data.rememberDiableRepos
 import `in`.ankitsaroj.diable.navigation.DiableNav
+import `in`.ankitsaroj.diable.ui.permissions.RequestDefaultHome
 import `in`.ankitsaroj.diable.ui.permissions.RequestLauncherPermissions
 import `in`.ankitsaroj.diable.ui.theme.SystemBarAppearance
 import `in`.ankitsaroj.diable.ui.theme.ThemeFont
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 DiableTheme(font = ThemeFont.fromKey(prefs.fontKey)) {
                     SystemBarAppearance(measuredTopLuminance = prefs.wallpaperTopLuminance)
                     RequestLauncherPermissions()
+                    RequestDefaultHome()
                     DiableNav(homeRequests = homeRequests)
                 }
             }

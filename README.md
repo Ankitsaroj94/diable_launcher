@@ -172,7 +172,8 @@ To build a signed release instead, put your own keystore details in
 (sideload-safe) or `./gradlew assembleFullRelease` (notification access and Quick Lock).
 Without those properties the release APK is built unsigned. `assembleRelease` builds both.
 
-Then press Home and choose **Diable Launcher**, or set it from the command line:
+Opening the app asks you to set it as the default launcher when it is not already.
+You can also press Home and choose **Diable Launcher**, or set it from the command line:
 
 ```bash
 adb shell cmd package set-home-activity in.ankitsaroj.diable/.MainActivity
