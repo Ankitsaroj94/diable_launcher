@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -162,14 +161,6 @@ fun WidgetContextSheet(
             onClick = {
                 onDismiss()
                 onNavigate(Routes.DiableSettings)
-            },
-        )
-        DiableSettingCard(
-            title = "Diable Pro",
-            icon = Icons.Default.WorkspacePremium,
-            onClick = {
-                onDismiss()
-                onNavigate(Routes.DiablePro)
             },
         )
         Spacer(modifier = Modifier.height(16.dp))

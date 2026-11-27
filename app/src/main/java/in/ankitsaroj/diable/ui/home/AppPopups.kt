@@ -201,7 +201,7 @@ fun AppPopupOverlay(
                         onDismiss()
                         onLaunch(request.app)
                     }
-                    // Diable Pro's pop-up widget: the app's own widget, right in the card.
+                    // The app's own widget, right in the card.
                     prefs.popupWidgets[request.app.packageName]?.let { widgetId ->
                         val heightDp = remember(widgetId) {
                             runCatching {

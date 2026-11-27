@@ -28,7 +28,6 @@ import `in`.ankitsaroj.diable.ui.screens.ChooseWallpaperScreen
 import `in`.ankitsaroj.diable.ui.screens.ClockStyleScreen
 import `in`.ankitsaroj.diable.ui.screens.HomeScreen
 import `in`.ankitsaroj.diable.ui.screens.MusicAppsScreen
-import `in`.ankitsaroj.diable.ui.screens.DiableProScreen
 import `in`.ankitsaroj.diable.ui.screens.DiableSettingsScreen
 import `in`.ankitsaroj.diable.ui.screens.ProductivityScreen
 import `in`.ankitsaroj.diable.ui.screens.SearchScreen
@@ -136,9 +135,6 @@ fun DiableNav(homeRequests: SharedFlow<Boolean>? = null) {
         }
         composable(Routes.Changelog) {
             ChangelogScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.DiablePro) {
-            DiableProScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.HelpFeedback) {
             HelpFeedbackScreen(onBack = { navController.popBackStack() })

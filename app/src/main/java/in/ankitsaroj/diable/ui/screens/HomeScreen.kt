@@ -504,7 +504,6 @@ fun HomeScreen(
                                             }
                                         when (promo) {
                                             HomePromo.Accessibility -> DiableAccessibilityService.openSettings(context)
-                                            HomePromo.Pro -> onNavigate(Routes.DiablePro)
                                             HomePromo.Customize -> onNavigate(Routes.Themes)
                                             HomePromo.Productivity -> onNavigate(Routes.Productivity)
                                         }
