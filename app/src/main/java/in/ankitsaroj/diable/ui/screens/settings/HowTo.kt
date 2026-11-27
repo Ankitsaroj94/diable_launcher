@@ -76,7 +76,7 @@ private val Tips = listOf(
     HowToTip(
         Icons.Default.Widgets,
         "Widgets",
-        "Long-press the clock, then Add Custom Widget. Add more widgets to the stack and swipe sideways between them.",
+        "Long-press the clock, then Add Custom Widget. Drag the bar under a widget to set its height, and use the arrows for width. Add more widgets to the stack and swipe sideways between them.",
     ),
     HowToTip(
         Icons.Default.Search,

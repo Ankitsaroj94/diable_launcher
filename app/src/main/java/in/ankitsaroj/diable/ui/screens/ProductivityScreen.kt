@@ -218,6 +218,20 @@ fun ProductivityScreen(
         }
         ProductivitySection("Shortcuts & Gestures") {
             ToggleRow(
+                title = "Swipe up to search",
+                subtitle = "Pull up on the home screen to open search",
+                checked = prefs.swipeUpToSearch,
+            ) {
+                repos.prefs.launchUpdate { p -> p.copy(swipeUpToSearch = it) }
+            }
+            ToggleRow(
+                title = "Swipe down to search",
+                subtitle = "Pull down on the home screen to open search. Off opens notifications.",
+                checked = prefs.swipeDownToSearch,
+            ) {
+                repos.prefs.launchUpdate { p -> p.copy(swipeDownToSearch = it) }
+            }
+            ToggleRow(
                 title = "Diable Button",
                 subtitle = "Run quick actions from your home screen",
                 checked = prefs.diableButton,

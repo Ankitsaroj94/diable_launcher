@@ -155,6 +155,9 @@ private val Changelog = listOf(
         listOf(
             "The default install no longer declares a notification listener or an accessibility service, so Play Protect can allow sideloading",
             "Notification dots, quick replies, the media player, Notification Summary and Quick Lock stay in the full build",
+            "Drag the bar under a home-screen widget to resize it",
+            "More clock styles, including analog, seven-segment, lamp, and spoken-time faces",
+            "Swipe down to search can be turned on from Productivity or search settings",
         ),
     ),
     ChangelogEntry(

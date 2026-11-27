@@ -34,6 +34,8 @@ data class DiablePrefs(
     val contactSearch: Boolean = false,
     val smartSuggestions: Boolean = true,
     val swipeUpToSearch: Boolean = true,
+    /** Pull down at the top of the home list to open search. Off opens the notification shade. */
+    val swipeDownToSearch: Boolean = false,
     val calculatorInSearch: Boolean = true,
     val weatherEnabled: Boolean = false,
     val showMediaWidget: Boolean = false,
@@ -111,8 +113,10 @@ data class DiablePrefs(
     val usageBreakerMinutes: Int = 15,
     /** "Move Widget": distance from the status bar to the clock/widget block, in dp. */
     val clockTopDp: Int = 125,
-    /** "Move and resize": custom widget height in dp; 0 = the widget's own size. */
+    /** Custom widget height in dp; 0 = the widget's own size. */
     val widgetHeightDp: Int = 0,
+    /** Custom widget width in dp; 0 = the full screen width. */
+    val widgetWidthDp: Int = 0,
     /** Weather units; false = Fahrenheit. */
     val weatherCelsius: Boolean = false,
     /** Chosen weather city; null name = use the device's location. */
@@ -165,6 +169,7 @@ class PrefsRepository(private val context: Context) {
             prefs[Keys.CONTACT_SEARCH] = updated.contactSearch
             prefs[Keys.SMART_SUGGESTIONS] = updated.smartSuggestions
             prefs[Keys.SWIPE_UP_TO_SEARCH] = updated.swipeUpToSearch
+            prefs[Keys.SWIPE_DOWN_TO_SEARCH] = updated.swipeDownToSearch
             prefs[Keys.CALCULATOR_IN_SEARCH] = updated.calculatorInSearch
             prefs[Keys.WEATHER_ENABLED] = updated.weatherEnabled
             prefs[Keys.SHOW_MEDIA_WIDGET] = updated.showMediaWidget
@@ -222,6 +227,7 @@ class PrefsRepository(private val context: Context) {
             prefs[Keys.USAGE_BREAKER_MINUTES] = updated.usageBreakerMinutes
             prefs[Keys.CLOCK_TOP_DP] = updated.clockTopDp
             prefs[Keys.WIDGET_HEIGHT_DP] = updated.widgetHeightDp
+            prefs[Keys.WIDGET_WIDTH_DP] = updated.widgetWidthDp
             prefs[Keys.WEATHER_CELSIUS] = updated.weatherCelsius
             updated.weatherCityName?.let { prefs[Keys.WEATHER_CITY_NAME] = it }
                 ?: prefs.remove(Keys.WEATHER_CITY_NAME)
@@ -252,6 +258,7 @@ class PrefsRepository(private val context: Context) {
         val CONTACT_SEARCH = booleanPreferencesKey("contact_search")
         val SMART_SUGGESTIONS = booleanPreferencesKey("smart_suggestions")
         val SWIPE_UP_TO_SEARCH = booleanPreferencesKey("swipe_up_to_search")
+        val SWIPE_DOWN_TO_SEARCH = booleanPreferencesKey("swipe_down_to_search")
         val CALCULATOR_IN_SEARCH = booleanPreferencesKey("calculator_in_search")
         val WEATHER_ENABLED = booleanPreferencesKey("weather_enabled")
         val SHOW_MEDIA_WIDGET = booleanPreferencesKey("show_media_widget")
@@ -301,6 +308,7 @@ class PrefsRepository(private val context: Context) {
         val USAGE_BREAKER_MINUTES = intPreferencesKey("usage_breaker_minutes")
         val CLOCK_TOP_DP = intPreferencesKey("clock_top_dp")
         val WIDGET_HEIGHT_DP = intPreferencesKey("widget_height_dp")
+        val WIDGET_WIDTH_DP = intPreferencesKey("widget_width_dp")
         val WEATHER_CELSIUS = booleanPreferencesKey("weather_celsius")
         val WEATHER_CITY_NAME = stringPreferencesKey("weather_city_name")
         val WEATHER_LAT = floatPreferencesKey("weather_lat")
@@ -324,6 +332,7 @@ class PrefsRepository(private val context: Context) {
             contactSearch = this[Keys.CONTACT_SEARCH] ?: d.contactSearch,
             smartSuggestions = this[Keys.SMART_SUGGESTIONS] ?: d.smartSuggestions,
             swipeUpToSearch = this[Keys.SWIPE_UP_TO_SEARCH] ?: d.swipeUpToSearch,
+            swipeDownToSearch = this[Keys.SWIPE_DOWN_TO_SEARCH] ?: d.swipeDownToSearch,
             calculatorInSearch = this[Keys.CALCULATOR_IN_SEARCH] ?: d.calculatorInSearch,
             weatherEnabled = this[Keys.WEATHER_ENABLED] ?: d.weatherEnabled,
             showMediaWidget = this[Keys.SHOW_MEDIA_WIDGET] ?: d.showMediaWidget,
@@ -385,6 +394,7 @@ class PrefsRepository(private val context: Context) {
             usageBreakerMinutes = this[Keys.USAGE_BREAKER_MINUTES] ?: d.usageBreakerMinutes,
             clockTopDp = this[Keys.CLOCK_TOP_DP] ?: d.clockTopDp,
             widgetHeightDp = this[Keys.WIDGET_HEIGHT_DP] ?: d.widgetHeightDp,
+            widgetWidthDp = this[Keys.WIDGET_WIDTH_DP] ?: d.widgetWidthDp,
             weatherCelsius = this[Keys.WEATHER_CELSIUS] ?: d.weatherCelsius,
             weatherCityName = this[Keys.WEATHER_CITY_NAME],
             weatherLat = this[Keys.WEATHER_LAT] ?: d.weatherLat,
@@ -468,6 +478,7 @@ class PrefsRepository(private val context: Context) {
             o.put("contactSearch", prefs.contactSearch)
             o.put("smartSuggestions", prefs.smartSuggestions)
             o.put("swipeUpToSearch", prefs.swipeUpToSearch)
+            o.put("swipeDownToSearch", prefs.swipeDownToSearch)
             o.put("calculatorInSearch", prefs.calculatorInSearch)
             o.put("weatherEnabled", prefs.weatherEnabled)
             o.put("showMediaWidget", prefs.showMediaWidget)
@@ -494,6 +505,8 @@ class PrefsRepository(private val context: Context) {
             o.put("widgetAppWidgetId", prefs.widgetAppWidgetId)
             o.put("replaceClockWithWidget", prefs.replaceClockWithWidget)
             o.put("fillScreenWidget", prefs.fillScreenWidget)
+            o.put("widgetHeightDp", prefs.widgetHeightDp)
+            o.put("widgetWidthDp", prefs.widgetWidthDp)
             o.put("iconStyleKey", prefs.iconStyleKey)
             o.put("iconPackPackage", prefs.iconPackPackage)
             o.put("favoriteOrder", JSONArray(prefs.favoritePackages.toList()))
@@ -511,6 +524,7 @@ class PrefsRepository(private val context: Context) {
                 contactSearch = o.optBoolean("contactSearch", fallback.contactSearch),
                 smartSuggestions = o.optBoolean("smartSuggestions", fallback.smartSuggestions),
                 swipeUpToSearch = o.optBoolean("swipeUpToSearch", fallback.swipeUpToSearch),
+                swipeDownToSearch = o.optBoolean("swipeDownToSearch", fallback.swipeDownToSearch),
                 calculatorInSearch = o.optBoolean("calculatorInSearch", fallback.calculatorInSearch),
                 weatherEnabled = o.optBoolean("weatherEnabled", fallback.weatherEnabled),
                 showMediaWidget = o.optBoolean("showMediaWidget", fallback.showMediaWidget),
@@ -541,6 +555,8 @@ class PrefsRepository(private val context: Context) {
                 widgetAppWidgetId = o.optInt("widgetAppWidgetId", fallback.widgetAppWidgetId),
                 replaceClockWithWidget = o.optBoolean("replaceClockWithWidget", fallback.replaceClockWithWidget),
                 fillScreenWidget = o.optBoolean("fillScreenWidget", fallback.fillScreenWidget),
+                widgetHeightDp = o.optInt("widgetHeightDp", fallback.widgetHeightDp),
+                widgetWidthDp = o.optInt("widgetWidthDp", fallback.widgetWidthDp),
                 iconStyleKey = o.optString("iconStyleKey", fallback.iconStyleKey),
                 iconPackPackage = o.optString("iconPackPackage").takeIf { it.isNotBlank() && it != "null" },
                 appLabels = decodeStringMap(o.optString("appLabels").takeIf { it.isNotBlank() }),

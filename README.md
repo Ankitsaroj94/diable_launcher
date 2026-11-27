@@ -51,8 +51,8 @@ Play Protect can install it. See [Play Protect and the two builds](#play-protect
   "Diable Launcher" footer with *Recently installed* and settings
 - Curved **alphabet scrubber** on the right edge: drag to preview a letter's apps, release to
   jump; tap a letter to jump; double-tap to lock the screen (*Quick Lock*)
-- Swipe up for search, swipe down for notifications, Home toggles search, Back never leaves
-  the launcher
+- Swipe up for search (and, if you turn it on, swipe down too). Otherwise swipe down opens
+  notifications. Home toggles search, Back never leaves the launcher
 - The **Diable button**: set your own tap and swipe-up actions
 
 **Apps**

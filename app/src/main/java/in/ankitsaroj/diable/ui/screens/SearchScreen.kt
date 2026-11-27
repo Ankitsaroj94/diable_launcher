@@ -50,6 +50,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Calculate
@@ -634,6 +635,15 @@ fun SearchSettingsSheet(onDismiss: () -> Unit) {
                 checked = prefs.swipeUpToSearch,
                 onCheckedChange = {
                     repos.prefs.launchUpdate { p -> p.copy(swipeUpToSearch = it) }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.ArrowDownward,
+                title = "Swipe down to search",
+                subtitle = "Pull down on the home screen to open search. Off opens notifications.",
+                checked = prefs.swipeDownToSearch,
+                onCheckedChange = {
+                    repos.prefs.launchUpdate { p -> p.copy(swipeDownToSearch = it) }
                 },
             )
             Spacer(modifier = Modifier.height(24.dp))

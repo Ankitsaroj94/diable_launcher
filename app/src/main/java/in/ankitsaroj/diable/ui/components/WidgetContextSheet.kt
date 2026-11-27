@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -69,8 +70,14 @@ fun WidgetContextSheet(
             },
         )
         DiableSettingCard(
-            title = "Move and resize",
+            title = "Resize widget",
+            subtitle = "Drag the bar under the widget. Arrows change the width.",
             icon = Icons.Default.AspectRatio,
+            onClick = { onDismiss() },
+        )
+        DiableSettingCard(
+            title = "Move",
+            icon = Icons.Default.OpenWith,
             onClick = {
                 onDismiss()
                 `in`.ankitsaroj.diable.ui.screens.HomeCommands.moveWidget.value = true

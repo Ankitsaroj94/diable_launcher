@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
@@ -61,6 +62,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import `in`.ankitsaroj.diable.data.CalendarRepository
 import `in`.ankitsaroj.diable.data.AppActions
 import `in`.ankitsaroj.diable.data.IconStyle
@@ -216,6 +218,9 @@ fun HomeScreen(
     // Widget height: Fill screen > the user's resize > the widget's own minimum size.
     // Left to wrap_content, most RemoteViews stretch and push favorites off screen.
     val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
+    val screenWidthDp = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
+    var dragWidgetHeight by remember { mutableStateOf<Float?>(null) }
+    var dragWidgetWidth by remember { mutableStateOf<Int?>(null) }
     val naturalWidgetDp = remember(prefs.widgetAppWidgetId) {
         runCatching {
             val info = android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetInfo(prefs.widgetAppWidgetId)
@@ -223,11 +228,15 @@ fun HomeScreen(
         }.getOrDefault(120).coerceIn(80, 240)
     }
     val widgetHeightDp = when {
+        dragWidgetHeight != null -> dragWidgetHeight!!.toInt()
         prefs.fillScreenWidget -> (screenHeightDp * 0.5f).toInt()
         prefs.widgetHeightDp > 0 -> prefs.widgetHeightDp
         else -> naturalWidgetDp
     }
-    val widgetFill = Modifier.height(widgetHeightDp.dp)
+    val widgetWidthDp = dragWidgetWidth ?: prefs.widgetWidthDp
+    val widgetFill = Modifier
+        .then(if (widgetWidthDp > 0) Modifier.width(widgetWidthDp.dp) else Modifier.fillMaxWidth())
+        .height(widgetHeightDp.dp)
     val scrolled by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
     }
@@ -321,7 +330,7 @@ fun HomeScreen(
         }
     }
 
-    val actions = remember(onNavigate, prefs.swipeUpToSearch, prefs.quickLock, apps) {
+    val actions = remember(onNavigate, prefs.swipeUpToSearch, prefs.swipeDownToSearch, prefs.quickLock, apps) {
         HomeListActions(
             onLaunch = onLaunch,
             onLongPress = { menuApp = it },
@@ -337,7 +346,9 @@ fun HomeScreen(
             },
             onSettings = { onNavigate(Routes.DiableSettings) },
             onSwipeUpAtTop = { if (prefs.swipeUpToSearch) onNavigate(Routes.Search) },
-            onSwipeDownAtTop = { expandNotificationShade(context) },
+            onSwipeDownAtTop = {
+                if (prefs.swipeDownToSearch) onNavigate(Routes.Search) else expandNotificationShade(context)
+            },
             onStarLongPress = { onNavigate(Routes.EditFavorites) },
             onAlphabetDoubleTap = {
                 if (prefs.quickLock && DiableAccessibilityService.available) {
@@ -406,15 +417,16 @@ fun HomeScreen(
                         .padding(top = clockTop.dp, bottom = 16.dp),
                 ) {
                     if (prefs.replaceClockWithWidget && widgetIds.isNotEmpty()) {
-                        WidgetStack(
-                            ids = widgetIds,
-                            accent = accent,
-                            onLongPress = openWidgetMenu,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .then(widgetFill),
-                        )
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            WidgetStack(
+                                ids = widgetIds,
+                                accent = accent,
+                                onLongPress = openWidgetMenu,
+                                modifier = Modifier
+                                    .padding(vertical = 8.dp)
+                                    .then(widgetFill),
+                            )
+                        }
                     } else {
                         ClockWidget(
                             clockStyleId = prefs.clockStyleId,
@@ -444,16 +456,46 @@ fun HomeScreen(
                             onLongClick = { showDiableWidgetSheet = true },
                         )
                         if (widgetIds.isNotEmpty()) {
-                            WidgetStack(
-                                ids = widgetIds,
-                                accent = accent,
-                                onLongPress = openWidgetMenu,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                                    .then(widgetFill),
-                            )
+                            Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                                WidgetStack(
+                                    ids = widgetIds,
+                                    accent = accent,
+                                    onLongPress = openWidgetMenu,
+                                    modifier = widgetFill,
+                                )
+                            }
                         }
+                    }
+                    if (widgetIds.isNotEmpty()) {
+                        WidgetResizeBar(
+                            onHeightDrag = { deltaDp ->
+                                val current = dragWidgetHeight ?: widgetHeightDp.toFloat()
+                                dragWidgetHeight = (current + deltaDp).coerceIn(64f, screenHeightDp * 0.85f)
+                            },
+                            onHeightDragEnd = {
+                                val committed = dragWidgetHeight?.toInt()
+                                if (committed != null) {
+                                    prefsRepo.launchUpdate {
+                                        it.copy(widgetHeightDp = committed, fillScreenWidget = false)
+                                    }
+                                }
+                                dragWidgetHeight = null
+                            },
+                            onNarrower = {
+                                val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
+                                val next = (current - 32).coerceAtLeast(140)
+                                val stored = if (next >= screenWidthDp - 16) 0 else next
+                                dragWidgetWidth = stored
+                                prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
+                            },
+                            onWider = {
+                                val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
+                                val next = (current + 32).coerceAtMost(screenWidthDp)
+                                val stored = if (next >= screenWidthDp - 16) 0 else next
+                                dragWidgetWidth = stored
+                                prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
+                            },
+                        )
                     }
                     if (moveMode) {
                         MoveWidgetHandle(
@@ -470,7 +512,7 @@ fun HomeScreen(
                                     it.copy(clockTopDp = DiablePrefs().clockTopDp, widgetHeightDp = 0)
                                 }
                             },
-                            onResize = if (prefs.widgetAppWidgetId >= 0) {
+                            onResize = if (widgetIds.isNotEmpty()) {
                                 { stepDp ->
                                     val next = (widgetHeightDp + stepDp).coerceIn(64, (screenHeightDp * 0.7f).toInt())
                                     prefsRepo.launchUpdate { it.copy(widgetHeightDp = next, fillScreenWidget = false) }
@@ -711,6 +753,65 @@ private fun MusicAppsOnHeadphones(enabled: Boolean, onConnected: () -> Unit) {
         }
         audio.registerAudioDeviceCallback(callback, android.os.Handler(android.os.Looper.getMainLooper()))
         onDispose { audio.unregisterAudioDeviceCallback(callback) }
+    }
+}
+
+/**
+ * Sits under a home-screen widget. Drag it up or down to set the height.
+ * The side buttons set the width; widening all the way returns to full width.
+ */
+@Composable
+private fun WidgetResizeBar(
+    onHeightDrag: (Float) -> Unit,
+    onHeightDragEnd: () -> Unit,
+    onNarrower: () -> Unit,
+    onWider: () -> Unit,
+) {
+    val density = LocalDensity.current
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier
+            .padding(top = 8.dp, end = 24.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(DiableCard.copy(alpha = 0.9f))
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.IconButton(onClick = onNarrower) {
+            androidx.compose.material3.Icon(
+                Icons.Default.Remove,
+                contentDescription = "Narrower widget",
+                tint = DiableText,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragEnd = onHeightDragEnd,
+                        onVerticalDrag = { change, amount ->
+                            change.consume()
+                            onHeightDrag(with(density) { amount.toDp().value })
+                        },
+                    )
+                }
+                .padding(vertical = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.Text(
+                text = "Drag to resize",
+                color = DiableAccentText,
+                fontSize = 14.sp,
+            )
+        }
+        androidx.compose.material3.IconButton(onClick = onWider) {
+            androidx.compose.material3.Icon(
+                Icons.Default.Add,
+                contentDescription = "Wider widget",
+                tint = DiableText,
+            )
+        }
     }
 }
 
