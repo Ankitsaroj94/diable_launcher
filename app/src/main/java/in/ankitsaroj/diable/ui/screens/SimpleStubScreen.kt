@@ -151,8 +151,10 @@ private data class ChangelogEntry(val version: String, val date: String, val cha
 
 private val Changelog = listOf(
     ChangelogEntry(
-        "1.6", "Nov 2026",
+        "1.6.1", "Nov 2026",
         listOf(
+            "Sliding from a letter onto an app opens it, widgets can be resized from the widget and its menu, and theme photos no longer turn the home screen black",
+            "A short drag on the home screen no longer opens search, and Back leaves the theme editor right away",
             "The default install no longer declares a notification listener or an accessibility service, so Play Protect can allow sideloading",
             "Notification dots, quick replies, the media player, Notification Summary and Quick Lock stay in the full build",
             "Drag the bar under a home-screen widget to resize it",
