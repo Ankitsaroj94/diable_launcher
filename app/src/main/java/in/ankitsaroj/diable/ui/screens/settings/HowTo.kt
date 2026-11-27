@@ -56,7 +56,7 @@ private val Tips = listOf(
     HowToTip(
         Icons.AutoMirrored.Filled.Sort,
         "The alphabet",
-        "Slide along the letters to preview each letter's apps and let go to jump there. Tap a letter to jump, ☆ to go back to favorites, ° for the launcher footer. In the full build, Quick Lock double-taps the alphabet to lock the phone.",
+        "Slide along the letters to preview each letter's apps. Slide onto an app to highlight it, and let go to open it. Let go on the letter itself to jump there. Tap a letter to jump, ☆ to go back to favorites, ° for the launcher footer. In the full build, Quick Lock double-taps the alphabet to lock the phone.",
     ),
     HowToTip(
         Icons.Default.TouchApp,
