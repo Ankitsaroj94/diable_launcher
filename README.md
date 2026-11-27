@@ -74,9 +74,10 @@ Play Protect can install it. See [Play Protect and the two builds](#play-protect
   with a call button, optional web suggestions from the provider you choose
 
 **Personalisation**
-- 11 built-in **icon styles** that follow your accent colour, plus any ADW/Nova-compatible
-  **icon pack**, per app if you like
-- Fonts, font size, text colour, theme colours (including Material You), **light and dark**
+- 11 built-in **icon styles** that follow your accent colour, plus any icon pack you install
+  from the Play Store (ADW, Nova, Lawnchair and the other common formats), per app if you like
+- Bundled fonts, plus any `.ttf` or `.otf` you add and fonts shipped inside font apps from
+  the Play Store. Font size, text colour, theme colours (including Material You), **light and dark**
   themes, pitch black, many clock styles
 - Wallpapers from [Openverse](https://openverse.org) with creator credits, or your own
   photos

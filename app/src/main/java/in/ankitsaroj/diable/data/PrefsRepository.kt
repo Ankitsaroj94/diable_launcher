@@ -77,6 +77,9 @@ data class DiablePrefs(
     val darkThemeMode: DarkThemeMode = DarkThemeMode.DeviceThemeAndWallpaper,
     // Theme identity: typeface, icon treatment, and which preset (if any) is applied.
     val fontKey: String = "quicksand",
+    /** File copied into app storage when [fontKey] is `"custom"`. */
+    val customFontPath: String? = null,
+    val customFontLabel: String? = null,
     val iconStyleKey: String = "rounded",
     /** Installed third-party icon pack, or null for the built-in styles only. */
     val iconPackPackage: String? = null,
@@ -197,6 +200,10 @@ class PrefsRepository(private val context: Context) {
             prefs[Keys.PITCH_BLACK_THEME] = updated.pitchBlackTheme
             prefs[Keys.DARK_THEME_MODE] = updated.darkThemeMode.name
             prefs[Keys.FONT_KEY] = updated.fontKey
+            updated.customFontPath?.let { prefs[Keys.CUSTOM_FONT_PATH] = it }
+                ?: prefs.remove(Keys.CUSTOM_FONT_PATH)
+            updated.customFontLabel?.let { prefs[Keys.CUSTOM_FONT_LABEL] = it }
+                ?: prefs.remove(Keys.CUSTOM_FONT_LABEL)
             prefs[Keys.ICON_STYLE_KEY] = updated.iconStyleKey
             updated.iconPackPackage?.let { prefs[Keys.ICON_PACK_PACKAGE] = it }
                 ?: prefs.remove(Keys.ICON_PACK_PACKAGE)
@@ -286,6 +293,8 @@ class PrefsRepository(private val context: Context) {
         val PITCH_BLACK_THEME = booleanPreferencesKey("pitch_black_theme")
         val DARK_THEME_MODE = stringPreferencesKey("dark_theme_mode")
         val FONT_KEY = stringPreferencesKey("font_key")
+        val CUSTOM_FONT_PATH = stringPreferencesKey("custom_font_path")
+        val CUSTOM_FONT_LABEL = stringPreferencesKey("custom_font_label")
         val ICON_STYLE_KEY = stringPreferencesKey("icon_style_key")
         val ICON_PACK_PACKAGE = stringPreferencesKey("icon_pack_package")
         val APPLIED_PRESET_ID = stringPreferencesKey("applied_preset_id")
@@ -362,6 +371,8 @@ class PrefsRepository(private val context: Context) {
                 ?.let { runCatching { DarkThemeMode.valueOf(it) }.getOrNull() }
                 ?: d.darkThemeMode,
             fontKey = this[Keys.FONT_KEY] ?: d.fontKey,
+            customFontPath = this[Keys.CUSTOM_FONT_PATH],
+            customFontLabel = this[Keys.CUSTOM_FONT_LABEL],
             iconStyleKey = this[Keys.ICON_STYLE_KEY] ?: d.iconStyleKey,
             iconPackPackage = this[Keys.ICON_PACK_PACKAGE],
             appliedPresetId = this[Keys.APPLIED_PRESET_ID],
@@ -507,8 +518,11 @@ class PrefsRepository(private val context: Context) {
             o.put("fillScreenWidget", prefs.fillScreenWidget)
             o.put("widgetHeightDp", prefs.widgetHeightDp)
             o.put("widgetWidthDp", prefs.widgetWidthDp)
+            o.put("fontKey", prefs.fontKey)
             o.put("iconStyleKey", prefs.iconStyleKey)
             o.put("iconPackPackage", prefs.iconPackPackage)
+            o.put("customFontPath", prefs.customFontPath)
+            o.put("customFontLabel", prefs.customFontLabel)
             o.put("favoriteOrder", JSONArray(prefs.favoritePackages.toList()))
             o.put("appLabels", encodeStringMap(prefs.appLabels))
             o.put("folders", encodeFolders(prefs.folders))
@@ -557,6 +571,9 @@ class PrefsRepository(private val context: Context) {
                 fillScreenWidget = o.optBoolean("fillScreenWidget", fallback.fillScreenWidget),
                 widgetHeightDp = o.optInt("widgetHeightDp", fallback.widgetHeightDp),
                 widgetWidthDp = o.optInt("widgetWidthDp", fallback.widgetWidthDp),
+                fontKey = o.optString("fontKey", fallback.fontKey),
+                customFontPath = o.optString("customFontPath").takeIf { it.isNotBlank() && it != "null" },
+                customFontLabel = o.optString("customFontLabel").takeIf { it.isNotBlank() && it != "null" },
                 iconStyleKey = o.optString("iconStyleKey", fallback.iconStyleKey),
                 iconPackPackage = o.optString("iconPackPackage").takeIf { it.isNotBlank() && it != "null" },
                 appLabels = decodeStringMap(o.optString("appLabels").takeIf { it.isNotBlank() }),

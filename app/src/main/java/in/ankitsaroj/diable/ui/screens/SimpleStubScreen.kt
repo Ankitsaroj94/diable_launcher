@@ -158,6 +158,7 @@ private val Changelog = listOf(
             "Drag the bar under a home-screen widget to resize it",
             "More clock styles, including analog, seven-segment, lamp, and spoken-time faces",
             "Swipe down to search can be turned on from Productivity or search settings",
+            "Icon packs and font files from the Play Store can be used for icons and type",
         ),
     ),
     ChangelogEntry(

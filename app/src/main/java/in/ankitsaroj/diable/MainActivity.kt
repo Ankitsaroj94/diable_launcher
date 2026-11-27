@@ -17,7 +17,6 @@ import `in`.ankitsaroj.diable.navigation.DiableNav
 import `in`.ankitsaroj.diable.ui.permissions.RequestDefaultHome
 import `in`.ankitsaroj.diable.ui.permissions.RequestLauncherPermissions
 import `in`.ankitsaroj.diable.ui.theme.SystemBarAppearance
-import `in`.ankitsaroj.diable.ui.theme.ThemeFont
 import `in`.ankitsaroj.diable.ui.theme.DiableTheme
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -56,7 +55,7 @@ class MainActivity : ComponentActivity() {
                         ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                     }
                 }
-                DiableTheme(font = ThemeFont.fromKey(prefs.fontKey)) {
+                DiableTheme {
                     SystemBarAppearance(measuredTopLuminance = prefs.wallpaperTopLuminance)
                     RequestLauncherPermissions()
                     RequestDefaultHome()
