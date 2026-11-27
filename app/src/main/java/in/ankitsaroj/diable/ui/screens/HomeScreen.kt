@@ -74,6 +74,7 @@ import `in`.ankitsaroj.diable.model.AppInfo
 import `in`.ankitsaroj.diable.navigation.Routes
 import `in`.ankitsaroj.diable.service.DiableAccessibilityService
 import `in`.ankitsaroj.diable.service.DiableNotificationListener
+import `in`.ankitsaroj.diable.service.SideloadLimits
 import `in`.ankitsaroj.diable.ui.components.AlphabetScrubber
 import `in`.ankitsaroj.diable.ui.components.EventsPromoSheet
 import `in`.ankitsaroj.diable.ui.components.FavoriteEntry
@@ -270,7 +271,11 @@ fun HomeScreen(
                 context.startActivity(Intent(Intent.ACTION_VOICE_COMMAND).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
             ButtonAction.Notifications -> expandNotificationShade(context)
-            ButtonAction.LockScreen -> DiableAccessibilityService.lockScreen(context)
+            ButtonAction.LockScreen -> if (DiableAccessibilityService.available) {
+                DiableAccessibilityService.lockScreen(context)
+            } else {
+                showAccessPrompt = "lock"
+            }
             null -> if (key == null) {
                 showButtonSetup = true
             } else {
@@ -335,7 +340,7 @@ fun HomeScreen(
             onSwipeDownAtTop = { expandNotificationShade(context) },
             onStarLongPress = { onNavigate(Routes.EditFavorites) },
             onAlphabetDoubleTap = {
-                if (prefs.quickLock) {
+                if (prefs.quickLock && DiableAccessibilityService.available) {
                     if (!DiableAccessibilityService.lockScreen(context)) showAccessPrompt = "lock"
                 }
             },
@@ -489,6 +494,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.padding(top = 16.dp)) {
                         HomePromo.entries
                             .filter { it.name !in prefs.dismissedPromos }
+                            .filter { it != HomePromo.Accessibility || DiableAccessibilityService.available }
                             .forEach { promo ->
                                 HomePromoRow(
                                     promo = promo,
@@ -591,24 +597,45 @@ fun HomeScreen(
         )
     }
     if (showAccessPrompt == "lock") {
+        val lockAvailable = DiableAccessibilityService.available
         AlertDialog(
             onDismissRequest = { showAccessPrompt = null },
             containerColor = DiableCard,
-            title = { Text("Allow Quick Lock", color = DiableText) },
+            title = {
+                Text(
+                    if (lockAvailable) "Allow Quick Lock" else SideloadLimits.TITLE,
+                    color = DiableText,
+                )
+            },
             text = {
                 Text(
-                    "To lock your screen, turn on this launcher under Accessibility → Installed apps.",
+                    if (lockAvailable) {
+                        "To lock your screen, turn on this launcher under Accessibility → Installed apps."
+                    } else {
+                        SideloadLimits.LOCK_BODY
+                    },
                     color = DiableTextMuted,
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     showAccessPrompt = null
-                    DiableAccessibilityService.openSettings(context)
-                }) { Text("Open settings", color = DiableAccentText) }
+                    if (lockAvailable) DiableAccessibilityService.openSettings(context)
+                }) {
+                    Text(
+                        if (lockAvailable) "Open settings" else "Okay",
+                        color = DiableAccentText,
+                    )
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { showAccessPrompt = null }) { Text("Cancel", color = DiableTextMuted) }
+            dismissButton = if (lockAvailable) {
+                {
+                    TextButton(onClick = { showAccessPrompt = null }) {
+                        Text("Cancel", color = DiableTextMuted)
+                    }
+                }
+            } else {
+                null
             },
         )
     }

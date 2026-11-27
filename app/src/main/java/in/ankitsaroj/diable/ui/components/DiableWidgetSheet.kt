@@ -35,6 +35,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalContext
 import `in`.ankitsaroj.diable.service.DiableNotificationListener
+import `in`.ankitsaroj.diable.service.SideloadLimits
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableCard
 import `in`.ankitsaroj.diable.ui.theme.DiableTextMuted
@@ -75,7 +76,22 @@ fun DiableWidgetSheetContent(
     var showWeatherSheet by remember { mutableStateOf(false) }
     var showCitySearch by remember { mutableStateOf(false) }
     var showAccessDialog by remember { mutableStateOf(false) }
+    var showSideloadLimit by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    if (showSideloadLimit) {
+        AlertDialog(
+            onDismissRequest = { showSideloadLimit = false },
+            containerColor = DiableCard,
+            title = { Text(SideloadLimits.TITLE, color = DiableText) },
+            text = { Text(SideloadLimits.NOTIFICATION_BODY, color = DiableTextMuted) },
+            confirmButton = {
+                TextButton(onClick = { showSideloadLimit = false }) {
+                    Text("Okay", color = DiableAccentText)
+                }
+            },
+        )
+    }
 
     if (showAccessDialog) {
         AlertDialog(
@@ -218,12 +234,20 @@ fun DiableWidgetSheetContent(
         DiableSettingCard(
             icon = Icons.Default.MusicNote,
             title = "Show Media Widget",
-            subtitle = "While playing music",
-            checked = prefs.showMediaWidget,
-            onCheckedChange = {
+            subtitle = if (DiableNotificationListener.available) {
+                "While playing music"
+            } else {
+                SideloadLimits.ROW_NOTE
+            },
+            checked = prefs.showMediaWidget && DiableNotificationListener.available,
+            onCheckedChange = { enabled ->
+                if (enabled && !DiableNotificationListener.available) {
+                    showSideloadLimit = true
+                    return@DiableSettingCard
+                }
                 // Media sessions are only readable with notification access.
-                if (it && !DiableNotificationListener.isEnabled(context)) showAccessDialog = true
-                repos.prefs.launchUpdate { p -> p.copy(showMediaWidget = it, mediaPlayer = it) }
+                if (enabled && !DiableNotificationListener.isEnabled(context)) showAccessDialog = true
+                repos.prefs.launchUpdate { p -> p.copy(showMediaWidget = enabled, mediaPlayer = enabled) }
             },
         )
         DiableSettingCard(

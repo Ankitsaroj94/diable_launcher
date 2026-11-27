@@ -29,6 +29,9 @@ class DiableAccessibilityService : AccessibilityService() {
     override fun onInterrupt() = Unit
 
     companion object {
+        /** This build declares the service. The sideload stub reports false. */
+        const val available: Boolean = true
+
         @Volatile
         private var instance: DiableAccessibilityService? = null
 

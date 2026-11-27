@@ -42,6 +42,13 @@ class MediaRepository(private val context: Context) {
      * registers against [DiableNotificationListener]. Everything is push-based; nothing polls.
      */
     fun activeMediaFlow(): Flow<MediaInfo?> = callbackFlow {
+        // The sideload build has no notification listener, and that is the only
+        // way a launcher is allowed to read active sessions.
+        if (!DiableNotificationListener.available) {
+            trySend(null)
+            awaitClose { }
+            return@callbackFlow
+        }
         val manager = context.getSystemService(Context.MEDIA_SESSION_SERVICE)
             as? MediaSessionManager
         if (manager == null) {

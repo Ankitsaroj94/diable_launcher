@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import `in`.ankitsaroj.diable.service.DiableAccessibilityService
 import `in`.ankitsaroj.diable.service.DiableNotificationListener
+import `in`.ankitsaroj.diable.service.SideloadLimits
 import `in`.ankitsaroj.diable.ui.screens.settings.LeisureAppsSheet
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableCard
@@ -77,6 +78,11 @@ fun ProductivityScreen(
 
     /** Runs [enable] now if [access] is already granted, otherwise explains and asks. */
     fun withAccess(access: AccessRequest, enable: () -> Unit) {
+        if (!access.isAvailable()) {
+            pending = null
+            accessRequest = access
+            return
+        }
         if (access.isGranted(context)) enable() else {
             pending = PendingEnable(access, enable)
             accessRequest = access
@@ -98,8 +104,12 @@ fun ProductivityScreen(
         ProductivitySection("Instant Access") {
             ToggleRow(
                 title = "Quick Replies",
-                subtitle = "Reply right from your home screen",
-                checked = prefs.quickReplies,
+                subtitle = if (DiableNotificationListener.available) {
+                    "Reply right from your home screen"
+                } else {
+                    SideloadLimits.ROW_NOTE
+                },
+                checked = prefs.quickReplies && DiableNotificationListener.available,
             ) { on ->
                 val apply = { repos.prefs.launchUpdate { p -> p.copy(quickReplies = on) } }
                 if (on) withAccess(AccessRequest.Notifications) { apply() } else apply()
@@ -126,8 +136,12 @@ fun ProductivityScreen(
             }
             ToggleRow(
                 title = "Media Player",
-                subtitle = "Control music and videos from your home screen",
-                checked = prefs.mediaPlayer,
+                subtitle = if (DiableNotificationListener.available) {
+                    "Control music and videos from your home screen"
+                } else {
+                    SideloadLimits.ROW_NOTE
+                },
+                checked = prefs.mediaPlayer && DiableNotificationListener.available,
             ) { on ->
                 val apply = {
                     repos.prefs.launchUpdate { p -> p.copy(mediaPlayer = on, showMediaWidget = on) }
@@ -161,8 +175,12 @@ fun ProductivityScreen(
             )
             ToggleRow(
                 title = "Notification Summary",
-                subtitle = "Bundle notifications to reduce distractions",
-                checked = prefs.notificationSummary,
+                subtitle = if (DiableNotificationListener.available) {
+                    "Bundle notifications to reduce distractions"
+                } else {
+                    SideloadLimits.ROW_NOTE
+                },
+                checked = prefs.notificationSummary && DiableNotificationListener.available,
             ) { on ->
                 val apply = { repos.prefs.launchUpdate { p -> p.copy(notificationSummary = on) } }
                 if (on) withAccess(AccessRequest.Notifications) { apply() } else apply()
@@ -208,8 +226,12 @@ fun ProductivityScreen(
             }
             ToggleRow(
                 title = "Quick Lock",
-                subtitle = "Double-tap the alphabet to lock your phone",
-                checked = prefs.quickLock,
+                subtitle = if (DiableAccessibilityService.available) {
+                    "Double-tap the alphabet to lock your phone"
+                } else {
+                    SideloadLimits.ROW_NOTE
+                },
+                checked = prefs.quickLock && DiableAccessibilityService.available,
             ) { on ->
                 val apply = { repos.prefs.launchUpdate { p -> p.copy(quickLock = on) } }
                 if (on) withAccess(AccessRequest.Accessibility) { apply() } else apply()
@@ -265,45 +287,78 @@ fun ProductivityScreen(
         )
     }
     accessRequest?.let { request ->
+        val missingFromBuild = !request.isAvailable()
         AlertDialog(
             onDismissRequest = {
                 accessRequest = null
                 pending = null
             },
             containerColor = DiableCard,
-            title = { Text(request.title, color = DiableText) },
-            text = { Text(request.body, color = DiableTextMuted) },
+            title = {
+                Text(
+                    if (missingFromBuild) SideloadLimits.TITLE else request.title,
+                    color = DiableText,
+                )
+            },
+            text = {
+                Text(
+                    if (missingFromBuild) request.unavailableBody else request.body,
+                    color = DiableTextMuted,
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     accessRequest = null
-                    request.open(context)
-                }) { Text(request.action, color = DiableAccentText) }
+                    if (!missingFromBuild) request.open(context)
+                    else pending = null
+                }) {
+                    Text(
+                        if (missingFromBuild) "Okay" else request.action,
+                        color = DiableAccentText,
+                    )
+                }
             },
-            dismissButton = {
-                TextButton(onClick = {
-                    accessRequest = null
-                    pending = null
-                }) { Text("Keep disabled", color = DiableAccentText) }
+            dismissButton = if (missingFromBuild) {
+                null
+            } else {
+                {
+                    TextButton(onClick = {
+                        accessRequest = null
+                        pending = null
+                    }) { Text("Keep disabled", color = DiableAccentText) }
+                }
             },
         )
     }
 }
 
 /** Special access some toggles need; granted in system Settings, not by a runtime prompt. */
-private enum class AccessRequest(val title: String, val body: String, val action: String) {
+private enum class AccessRequest(
+    val title: String,
+    val body: String,
+    val action: String,
+    val unavailableBody: String,
+) {
     Notifications(
         "Allow notification access",
         "This feature reads your notifications and media sessions to show them on your " +
             "home screen. Nothing leaves your device.",
         "Allow notification access",
+        SideloadLimits.NOTIFICATION_BODY,
     ),
     Accessibility(
         "Allow accessibility access",
         "Quick Lock uses an accessibility service only to lock your screen when you " +
             "double-tap the alphabet. It reads no screen content.",
         "Open settings",
+        SideloadLimits.LOCK_BODY,
     ),
     ;
+
+    fun isAvailable(): Boolean = when (this) {
+        Notifications -> DiableNotificationListener.available
+        Accessibility -> DiableAccessibilityService.available
+    }
 
     fun isGranted(context: Context): Boolean = when (this) {
         Notifications -> DiableNotificationListener.isEnabled(context)

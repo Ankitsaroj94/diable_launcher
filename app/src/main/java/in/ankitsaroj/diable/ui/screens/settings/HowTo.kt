@@ -51,12 +51,12 @@ private val Tips = listOf(
     HowToTip(
         Icons.Default.SwipeRight,
         "Swipe right on an app",
-        "Opens its pop-up: shortcuts, waiting notifications (reply or dismiss) and any apps or widget you pinned to it.",
+        "Opens its pop-up: shortcuts, waiting notifications when this install can read them (reply or dismiss) and any apps or widget you pinned to it.",
     ),
     HowToTip(
         Icons.AutoMirrored.Filled.Sort,
         "The alphabet",
-        "Slide along the letters to preview each letter's apps and let go to jump there. Tap a letter to jump, ☆ to go back to favorites, ° for the launcher footer. With Quick Lock on, double-tap it to lock the phone.",
+        "Slide along the letters to preview each letter's apps and let go to jump there. Tap a letter to jump, ☆ to go back to favorites, ° for the launcher footer. In the full build, Quick Lock double-taps the alphabet to lock the phone.",
     ),
     HowToTip(
         Icons.Default.TouchApp,
