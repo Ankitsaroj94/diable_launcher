@@ -159,6 +159,7 @@ private val Changelog = listOf(
             "More clock styles, including analog, seven-segment, lamp, and spoken-time faces",
             "Swipe down to search can be turned on from Productivity or search settings",
             "Icon packs and font files from the Play Store can be used for icons and type",
+            "Themes can be downloaded into My Themes, with drawn wallpapers when a photo fails, plus live wallpapers",
         ),
     ),
     ChangelogEntry(

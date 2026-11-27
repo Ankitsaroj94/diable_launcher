@@ -26,6 +26,8 @@ object WallpaperCatalog {
         Category("Ocean", "calm sea horizon minimal water", listOf(Color(0xFF2193B0), Color(0xFF6DD5ED))),
         Category("Sky", "clear sky clouds soft pastel", listOf(Color(0xFF4FACFE), Color(0xFF00F2FE))),
         Category("Forest", "misty forest fog minimal trees", listOf(Color(0xFF134E5E), Color(0xFF71B280))),
+        Category("Flowers", "soft flowers pastel botanicals", listOf(Color(0xFFFF6B6B), Color(0xFFFFB88C))),
+        Category("Cyberpunk", "neon city night rain lights", listOf(Color(0xFFFC00FF), Color(0xFF00DBDE))),
         Category("Desert", "desert dunes minimal sand", listOf(Color(0xFFD4A574), Color(0xFF8B6F47))),
         Category("Space", "nebula stars deep space dark", listOf(Color(0xFF0B486B), Color(0xFF14213D))),
         Category("Snow", "snow minimal white landscape", listOf(Color(0xFFE8EDF2), Color(0xFFB8C6D9))),

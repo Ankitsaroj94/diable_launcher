@@ -79,8 +79,9 @@ Play Protect can install it. See [Play Protect and the two builds](#play-protect
 - Bundled fonts, plus any `.ttf` or `.otf` you add and fonts shipped inside font apps from
   the Play Store. Font size, text colour, theme colours (including Material You), **light and dark**
   themes, pitch black, many clock styles
-- Wallpapers from [Openverse](https://openverse.org) with creator credits, or your own
-  photos
+- Wallpapers from [Openverse](https://openverse.org) with creator credits, pictures drawn in
+  the app when a photo will not load, your own photos, and live wallpapers (drift, stars,
+  waves, aurora). Ready-made themes can be downloaded into My Themes and applied later.
 - Ready-made themes, saving your own, and sharing or importing themes as text
 
 **Digital wellbeing**

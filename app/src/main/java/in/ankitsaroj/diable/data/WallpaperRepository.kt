@@ -32,6 +32,8 @@ data class WebWallpaper(
     val licenseName: String,
     val licenseUrl: String,
     val sourcePage: String,
+    /** Original file, used when the resized URL fails. */
+    val sourceUrl: String = fullUrl,
 )
 
 /**
@@ -76,13 +78,16 @@ class WallpaperRepository(private val context: Context) {
             val arr = JSONObject(body).optJSONArray("results") ?: return emptyList()
             (0 until arr.length()).mapNotNull { i ->
                 val o = arr.optJSONObject(i) ?: return@mapNotNull null
-                val full = o.optString("url").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val full = o.optString("url").takeIf { it.startsWith("http") } ?: return@mapNotNull null
+                val apiThumb = o.optString("thumbnail").takeIf { it.startsWith("http") }
                 WebWallpaper(
                     id = o.optString("id"),
                     title = o.optString("title").ifBlank { "Untitled" },
-                    thumbnailUrl = scaledUrl(full, THUMB_WIDTH)
-                        ?: o.optString("thumbnail").ifBlank { full },
+                    // The provider's own thumb is what actually loads. Rewritten Flickr and
+                    // Wikimedia URLs often 404, which is the blank/error tile in the picker.
+                    thumbnailUrl = apiThumb ?: scaledUrl(full, THUMB_WIDTH) ?: full,
                     fullUrl = scaledUrl(full, FULL_WIDTH) ?: full,
+                    sourceUrl = full,
                     creator = o.optString("creator").ifBlank { "Unknown" },
                     licenseName = o.optString("license").uppercase(),
                     licenseUrl = o.optString("license_url"),
@@ -102,7 +107,7 @@ class WallpaperRepository(private val context: Context) {
     suspend fun applyWallpaper(wallpaper: WebWallpaper): AppliedWallpaper? =
         withContext(Dispatchers.IO) {
             runCatching {
-                val downloaded = downloadBitmap(wallpaper.fullUrl) ?: return@runCatching null
+                val downloaded = downloadBitmap(wallpaper) ?: return@runCatching null
                 // setBitmap fits rather than fills, which letterboxes the wallpaper with
                 // black bars. Crop to the screen's aspect ratio first.
                 val bitmap = downloaded.cropToScreenAspect(context)
@@ -119,19 +124,30 @@ class WallpaperRepository(private val context: Context) {
             }.getOrNull()
         }
 
-    private fun downloadBitmap(url: String): Bitmap? {
+    /** Tries the resized URL, then the original, then the thumbnail. */
+    fun downloadBitmap(wallpaper: WebWallpaper): Bitmap? {
+        val urls = listOf(wallpaper.fullUrl, wallpaper.sourceUrl, wallpaper.thumbnailUrl).distinct()
+        return urls.firstNotNullOfOrNull { downloadUrl(it) }
+    }
+
+    private fun downloadUrl(url: String): Bitmap? {
         val conn = (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
             instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "Diable/1.0")
+            setRequestProperty("User-Agent", "Diable/1.0 (launcher wallpaper picker)")
+            setRequestProperty("Accept", "image/avif,image/webp,image/*,*/*")
         }
         return conn.use { c ->
             if (c.responseCode !in 200..299) return null
-            // Downsample to roughly screen size; full-res Flickr originals are huge.
+            val type = c.contentType.orEmpty()
+            if (type.startsWith("text") || type.contains("html")) return null
+            // Downsample to roughly screen size; full-res originals are huge.
             val bytes = c.inputStream.readBytes()
+            if (bytes.size < 32) return null
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
             val metrics = context.resources.displayMetrics
             var sample = 1
             while (bounds.outHeight / sample > metrics.heightPixels * 2 ||

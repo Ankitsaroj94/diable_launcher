@@ -59,8 +59,10 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import `in`.ankitsaroj.diable.data.IconStyle
 import `in`.ankitsaroj.diable.data.LocalDiableRepos
+import `in`.ankitsaroj.diable.data.ThemeLibrary
 import `in`.ankitsaroj.diable.data.ThemePreset
 import `in`.ankitsaroj.diable.data.ThemePresets
+import `in`.ankitsaroj.diable.ui.screens.settings.SavedThemes
 import `in`.ankitsaroj.diable.data.DiableRepos
 import `in`.ankitsaroj.diable.data.WebWallpaper
 import `in`.ankitsaroj.diable.ui.home.ClockStylePreview
@@ -177,14 +179,14 @@ fun ThemeCarouselScreen(navController: NavController) {
                         applying = true
                         val preset = presets[centered]
                         scope.launch {
-                            val applied = applyPreset(repos, preset)
+                            val snapshot = runCatching { ThemeLibrary.materialize(context, repos, preset) }.getOrNull()
                             applying = false
-                            if (!applied) {
-                                Toast.makeText(
-                                    context,
-                                    "Applied, but the wallpaper couldn't be downloaded",
-                                    Toast.LENGTH_SHORT,
-                                ).show()
+                            if (snapshot == null) {
+                                Toast.makeText(context, "Couldn't build that theme", Toast.LENGTH_SHORT).show()
+                            } else {
+                                repos.prefs.update { snapshot.applyTo(it) }
+                                snapshot.applyWallpaper(context)
+                                SavedThemes.save(context, preset.name, snapshot)
                             }
                             navController.popBackStack()
                         }
@@ -204,27 +206,35 @@ fun ThemeCarouselScreen(navController: NavController) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Text("Apply theme", color = Color(0xFF132569), fontSize = 17.sp)
             }
+            Text(
+                text = "Download all themes",
+                color = Color.White,
+                fontSize = 15.sp,
+                modifier = Modifier
+                    .padding(top = 14.dp)
+                    .clickable(enabled = !applying) {
+                        applying = true
+                        scope.launch {
+                            var saved = 0
+                            presets.forEach { preset ->
+                                val snapshot = runCatching { ThemeLibrary.materialize(context, repos, preset) }.getOrNull()
+                                if (snapshot != null) {
+                                    SavedThemes.save(context, preset.name, snapshot)
+                                    saved++
+                                }
+                            }
+                            applying = false
+                            Toast.makeText(
+                                context,
+                                if (saved == 0) "Couldn't save themes" else "Saved $saved themes. Open My Themes to use them.",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
         }
     }
-}
-
-/** Commits every part of [preset]. Returns false if only the wallpaper failed. */
-private suspend fun applyPreset(repos: DiableRepos, preset: ThemePreset): Boolean {
-    val cover = repos.wallpapers.search(preset.wallpaperCategory).firstOrNull()
-    val applied = cover?.let { repos.wallpapers.applyWallpaper(it) }
-    repos.prefs.update {
-        it.copy(
-            appliedPresetId = preset.id,
-            fontKey = preset.fontKey,
-            clockStyleId = preset.clockStyleId,
-            accentColorArgb = preset.accentArgb,
-            iconStyleKey = preset.iconStyle.key,
-            wallpaperUri = applied?.marker ?: "gradient:${preset.wallpaperCategory}",
-            wallpaperCredit = cover?.let { c -> "${c.creator} · ${c.licenseName}" },
-            wallpaperTopLuminance = applied?.topLuminance ?: -1f,
-        )
-    }
-    return applied != null
 }
 
 @Composable

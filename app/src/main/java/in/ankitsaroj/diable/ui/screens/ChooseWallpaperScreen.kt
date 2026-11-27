@@ -2,6 +2,7 @@ package `in`.ankitsaroj.diable.ui.screens
 
 import `in`.ankitsaroj.diable.ui.theme.DiableAccentText
 import `in`.ankitsaroj.diable.ui.theme.DiableText
+import android.app.WallpaperManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -53,8 +54,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import `in`.ankitsaroj.diable.data.LocalDiableRepos
+import `in`.ankitsaroj.diable.data.PaintedWallpapers
 import `in`.ankitsaroj.diable.data.WallpaperCatalog
 import `in`.ankitsaroj.diable.data.WebWallpaper
+import `in`.ankitsaroj.diable.wallpaper.DiableLiveWallpaper
 import `in`.ankitsaroj.diable.ui.components.PillHeader
 import `in`.ankitsaroj.diable.ui.components.ThemeScreenScaffold
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
@@ -104,7 +107,18 @@ fun ChooseWallpaperScreen(
     }
 
     val category = openCategory
-    if (category == null) {
+    if (category == "Live") {
+        BackHandler { openCategory = null }
+        ThemeScreenScaffold(header = { PillHeader("Live wallpapers") }) {
+            LiveWallpaperList(onPick = { style ->
+                DiableLiveWallpaper.request(context, style)
+                repos.prefs.launchUpdate {
+                    it.copy(wallpaperUri = "live:$style", wallpaperCredit = "Live wallpaper", appliedPresetId = null)
+                }
+                finish()
+            })
+        }
+    } else if (category == null) {
         ThemeScreenScaffold(header = { PillHeader("Choose wallpaper") }) {
             CategoryGrid(
                 onOpen = { openCategory = it },
@@ -161,6 +175,19 @@ private fun CategoryGrid(
                 Text("Choose From Gallery", color = DiableText, fontSize = 17.sp)
             }
         }
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.78f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Brush.verticalGradient(listOf(Color(0xFF041018), Color(0xFF1B6CA8))))
+                    .clickable { onOpen("Live") },
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                Text("Live", color = DiableText, fontSize = 17.sp, modifier = Modifier.padding(14.dp))
+            }
+        }
         items(WallpaperCatalog.categories) { cat ->
             Box(
                 modifier = Modifier
@@ -177,6 +204,40 @@ private fun CategoryGrid(
                     fontSize = 17.sp,
                     modifier = Modifier.padding(14.dp),
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LiveWallpaperList(onPick: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(
+            text = "These move behind the home screen. They are drawn in the app.",
+            color = DiableTextMuted,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+        DiableLiveWallpaper.styles.forEach { (id, label) ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .height(72.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        when (id) {
+                            "stars" -> Brush.verticalGradient(listOf(Color(0xFF070B16), Color(0xFF1B2838)))
+                            "waves" -> Brush.verticalGradient(listOf(Color(0xFF06283D), Color(0xFF47A3C6)))
+                            "aurora" -> Brush.verticalGradient(listOf(Color(0xFF041018), Color(0xFF69F0AE)))
+                            else -> Brush.verticalGradient(listOf(Color(0xFF0B1D36), Color(0xFF6C3483)))
+                        },
+                    )
+                    .clickable { onPick(id) }
+                    .padding(horizontal = 18.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Text(label, color = DiableText, fontSize = 18.sp)
             }
         }
     }
@@ -206,15 +267,47 @@ private fun WallpaperGallery(category: String, onApplied: () -> Unit) {
             CircularProgressIndicator(color = DiableAccentText)
         }
 
-        items.isEmpty() -> Box(
+        items.isEmpty() -> Column(
             modifier = Modifier.fillMaxSize().padding(32.dp),
-            contentAlignment = Alignment.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Couldn't load wallpapers. Check your connection and try again.",
+                text = "Couldn't load photos. Check your connection, or use a picture drawn in the app.",
                 color = DiableTextMuted,
                 fontSize = 15.sp,
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(DiableAccent)
+                    .clickable {
+                        scope.launch {
+                            val bitmap = PaintedWallpapers.render(context, category)
+                            val ok = runCatching {
+                                WallpaperManager.getInstance(context).setBitmap(bitmap)
+                            }.isSuccess
+                            bitmap.recycle()
+                            if (!ok) {
+                                Toast.makeText(context, "Couldn't set that wallpaper", Toast.LENGTH_SHORT).show()
+                            } else {
+                                repos.prefs.update {
+                                    it.copy(
+                                        wallpaperUri = "gradient:$category",
+                                        wallpaperCredit = "Drawn in Diable",
+                                        wallpaperTopLuminance = -1f,
+                                        appliedPresetId = null,
+                                    )
+                                }
+                                onApplied()
+                            }
+                        }
+                    }
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
+            ) {
+                Text("Use a drawn wallpaper", color = Color(0xFF132569), fontSize = 16.sp)
+            }
         }
 
         else -> LazyVerticalGrid(

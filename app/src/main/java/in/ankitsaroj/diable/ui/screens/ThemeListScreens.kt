@@ -127,6 +127,7 @@ fun MyThemesScreen(navController: NavController) {
                         onApply = {
                             scope.launch {
                                 repos.prefs.update { theme.snapshot.applyTo(it) }
+                                theme.snapshot.applyWallpaper(context)
                                 Toast.makeText(context, "\"${theme.name}\" applied", Toast.LENGTH_SHORT).show()
                             }
                         },
@@ -261,15 +262,9 @@ fun CommunityThemesScreen(navController: NavController) {
             DiableSettingsRow(
                 title = "Browse",
                 icon = Icons.Default.Explore,
-                summary = "Themes shared by other users",
+                summary = "Download the ready-made themes and keep them in My Themes",
                 // There is no online gallery for this launcher; themes travel as shared text.
-                onClick = {
-                    android.widget.Toast.makeText(
-                        context,
-                        "No online gallery yet. Ask a friend to Share Current, then use Import.",
-                        android.widget.Toast.LENGTH_LONG,
-                    ).show()
-                },
+                onClick = { navController.navigate(Routes.ReadyMadeThemes) },
             )
             DiableSettingsRow(
                 title = "Share Current",
