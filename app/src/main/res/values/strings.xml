@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Diable Launcher</string>
     <string name="accessibility_description">Lets the launcher lock your screen when you double-tap the alphabet (Quick Lock). No screen content is read.</string>
+    <string name="live_wallpaper_description">Moving wallpapers drawn by Diable: drift, stars, waves and aurora.</string>
 </resources>

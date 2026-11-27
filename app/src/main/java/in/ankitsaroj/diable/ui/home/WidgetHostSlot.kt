@@ -152,7 +152,7 @@ fun WidgetHostSlot(
 
 
 /**
- * Diable Pro's widget stack: several widgets in one slot, swiped through sideways, with
+ * Widget stack: several widgets in one slot, swiped through sideways, with
  * page dots underneath. A single widget renders exactly like [WidgetHostSlot].
  */
 @Composable

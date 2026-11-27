@@ -311,6 +311,8 @@ fun ClockTimeDisplay(
             Text(hh, fontSize = 58.sp, fontWeight = FontWeight.Black, color = accentColor)
             Text(mm, fontSize = 58.sp, fontWeight = FontWeight.Thin, color = accentColor, modifier = Modifier.padding(start = 6.dp))
         }
+        in OPEN_CLOCK_FIRST until OPEN_CLOCK_FIRST + OPEN_CLOCK_COUNT ->
+            OpenClockFace(styleId, time, amPm, accentColor)
         else -> Text(time, fontSize = 52.sp, fontWeight = FontWeight.Normal, color = accentColor)
     }
 }
@@ -394,8 +396,8 @@ fun ClockDayNameDisplay(styleId: Int, day: String, accentColor: Color) {
     }
 }
 
-/** Total selectable clock styles, including [CLOCK_STYLE_DATE_ONLY]. */
-const val CLOCK_STYLE_COUNT = 48
+/** Total selectable clock styles, including [CLOCK_STYLE_DATE_ONLY] and the drawn faces. */
+const val CLOCK_STYLE_COUNT = OPEN_CLOCK_FIRST + OPEN_CLOCK_COUNT
 
 /**
  * A clock rendered with fixed demo values, for the style-picker tiles. Diable previews

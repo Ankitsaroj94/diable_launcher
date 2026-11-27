@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
@@ -56,11 +57,14 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import `in`.ankitsaroj.diable.data.CalendarRepository
 import `in`.ankitsaroj.diable.data.AppActions
 import `in`.ankitsaroj.diable.data.IconStyle
@@ -74,6 +78,7 @@ import `in`.ankitsaroj.diable.model.AppInfo
 import `in`.ankitsaroj.diable.navigation.Routes
 import `in`.ankitsaroj.diable.service.DiableAccessibilityService
 import `in`.ankitsaroj.diable.service.DiableNotificationListener
+import `in`.ankitsaroj.diable.service.SideloadLimits
 import `in`.ankitsaroj.diable.ui.components.AlphabetScrubber
 import `in`.ankitsaroj.diable.ui.components.EventsPromoSheet
 import `in`.ankitsaroj.diable.ui.components.FavoriteEntry
@@ -97,6 +102,7 @@ import `in`.ankitsaroj.diable.ui.home.WidgetStack
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableCard
 import `in`.ankitsaroj.diable.ui.theme.DiableTextMuted
+import `in`.ankitsaroj.diable.ui.theme.SavedWallpaperImage
 import `in`.ankitsaroj.diable.ui.theme.wallpaperBackground
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -215,6 +221,9 @@ fun HomeScreen(
     // Widget height: Fill screen > the user's resize > the widget's own minimum size.
     // Left to wrap_content, most RemoteViews stretch and push favorites off screen.
     val screenHeightDp = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
+    val screenWidthDp = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
+    var dragWidgetHeight by remember { mutableStateOf<Float?>(null) }
+    var dragWidgetWidth by remember { mutableStateOf<Int?>(null) }
     val naturalWidgetDp = remember(prefs.widgetAppWidgetId) {
         runCatching {
             val info = android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetInfo(prefs.widgetAppWidgetId)
@@ -222,11 +231,15 @@ fun HomeScreen(
         }.getOrDefault(120).coerceIn(80, 240)
     }
     val widgetHeightDp = when {
+        dragWidgetHeight != null -> dragWidgetHeight!!.toInt()
         prefs.fillScreenWidget -> (screenHeightDp * 0.5f).toInt()
         prefs.widgetHeightDp > 0 -> prefs.widgetHeightDp
         else -> naturalWidgetDp
     }
-    val widgetFill = Modifier.height(widgetHeightDp.dp)
+    val widgetWidthDp = dragWidgetWidth ?: prefs.widgetWidthDp
+    val widgetFill = Modifier
+        .then(if (widgetWidthDp > 0) Modifier.width(widgetWidthDp.dp) else Modifier.fillMaxWidth())
+        .height(widgetHeightDp.dp)
     val scrolled by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
     }
@@ -270,7 +283,11 @@ fun HomeScreen(
                 context.startActivity(Intent(Intent.ACTION_VOICE_COMMAND).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
             ButtonAction.Notifications -> expandNotificationShade(context)
-            ButtonAction.LockScreen -> DiableAccessibilityService.lockScreen(context)
+            ButtonAction.LockScreen -> if (DiableAccessibilityService.available) {
+                DiableAccessibilityService.lockScreen(context)
+            } else {
+                showAccessPrompt = "lock"
+            }
             null -> if (key == null) {
                 showButtonSetup = true
             } else {
@@ -304,7 +321,7 @@ fun HomeScreen(
                 HomeCommands.moveWidget.value = false
             }
             popup != null -> popup = null
-            scrolled -> scope.launch { listState.animateScrollToItem(0) }
+            scrolled -> scope.launch { listState.scrollToItem(0) }
         }
     }
 
@@ -316,7 +333,7 @@ fun HomeScreen(
         }
     }
 
-    val actions = remember(onNavigate, prefs.swipeUpToSearch, prefs.quickLock, apps) {
+    val actions = remember(onNavigate, prefs.swipeUpToSearch, prefs.swipeDownToSearch, prefs.quickLock, apps) {
         HomeListActions(
             onLaunch = onLaunch,
             onLongPress = { menuApp = it },
@@ -332,10 +349,12 @@ fun HomeScreen(
             },
             onSettings = { onNavigate(Routes.DiableSettings) },
             onSwipeUpAtTop = { if (prefs.swipeUpToSearch) onNavigate(Routes.Search) },
-            onSwipeDownAtTop = { expandNotificationShade(context) },
+            onSwipeDownAtTop = {
+                if (prefs.swipeDownToSearch) onNavigate(Routes.Search) else expandNotificationShade(context)
+            },
             onStarLongPress = { onNavigate(Routes.EditFavorites) },
             onAlphabetDoubleTap = {
-                if (prefs.quickLock) {
+                if (prefs.quickLock && DiableAccessibilityService.available) {
                     if (!DiableAccessibilityService.lockScreen(context)) showAccessPrompt = "lock"
                 }
             },
@@ -345,8 +364,9 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // The window is transparent with windowShowWallpaper, so the live system
-            // wallpaper shows through unless the user picked a gradient in Themes.
+            // Gradients paint here. Saved photos paint as an image so a failed system
+            // wallpaper doesn't leave a black home screen. Otherwise the window is
+            // transparent and the system wallpaper shows through.
             .wallpaperBackground(prefs.wallpaperUri)
             .then(
                 if (prefs.dimWallpaper) {
@@ -369,6 +389,11 @@ fun HomeScreen(
             )
             .onGloballyPositioned { originY = it.positionInRoot().y },
     ) {
+        val savedWallpaper = prefs.wallpaperUri?.removePrefix("file:")
+            ?.takeIf { prefs.wallpaperUri?.startsWith("file:") == true }
+        if (savedWallpaper != null) {
+            SavedWallpaperImage(savedWallpaper, Modifier.fillMaxSize())
+        }
         // Every home label sits directly on the wallpaper, so give them all a soft
         // shadow. Dimming alone cannot win against a high-contrast photo.
         CompositionLocalProvider(
@@ -401,17 +426,26 @@ fun HomeScreen(
                         .padding(top = clockTop.dp, bottom = 16.dp),
                 ) {
                     if (prefs.replaceClockWithWidget && widgetIds.isNotEmpty()) {
-                        WidgetStack(
-                            ids = widgetIds,
-                            accent = accent,
-                            onLongPress = openWidgetMenu,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .then(widgetFill),
-                        )
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            WidgetStack(
+                                ids = widgetIds,
+                                accent = accent,
+                                onLongPress = openWidgetMenu,
+                                modifier = Modifier
+                                    .padding(vertical = 8.dp)
+                                    .then(widgetFill),
+                            )
+                        }
                     } else {
+                        val clockScale = prefs.clockScale.coerceIn(0.7f, 1.6f)
                         ClockWidget(
+                            modifier = Modifier
+                                .padding(bottom = ((clockScale - 1f) * 96f).coerceAtLeast(0f).dp)
+                                .graphicsLayer {
+                                    scaleX = clockScale
+                                    scaleY = clockScale
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                },
                             clockStyleId = prefs.clockStyleId,
                             showBattery = prefs.showBatteryPercentage,
                             showWeather = prefs.weatherEnabled,
@@ -439,15 +473,44 @@ fun HomeScreen(
                             onLongClick = { showDiableWidgetSheet = true },
                         )
                         if (widgetIds.isNotEmpty()) {
-                            WidgetStack(
-                                ids = widgetIds,
-                                accent = accent,
-                                onLongPress = openWidgetMenu,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                                    .then(widgetFill),
-                            )
+                            Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                                WidgetStack(
+                                    ids = widgetIds,
+                                    accent = accent,
+                                    onLongPress = openWidgetMenu,
+                                    modifier = widgetFill,
+                                )
+                                WidgetResizeBar(
+                                    modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 24.dp, vertical = 4.dp),
+                                    onHeightDrag = { deltaDp ->
+                                        val current = dragWidgetHeight ?: widgetHeightDp.toFloat()
+                                        dragWidgetHeight = (current + deltaDp).coerceIn(64f, screenHeightDp * 0.85f)
+                                    },
+                                    onHeightDragEnd = {
+                                        val committed = dragWidgetHeight?.toInt()
+                                        if (committed != null) {
+                                            prefsRepo.launchUpdate {
+                                                it.copy(widgetHeightDp = committed, fillScreenWidget = false)
+                                            }
+                                        }
+                                        dragWidgetHeight = null
+                                    },
+                                    onNarrower = {
+                                        val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
+                                        val next = (current - 32).coerceAtLeast(140)
+                                        val stored = if (next >= screenWidthDp - 16) 0 else next
+                                        dragWidgetWidth = stored
+                                        prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
+                                    },
+                                    onWider = {
+                                        val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
+                                        val next = (current + 32).coerceAtMost(screenWidthDp)
+                                        val stored = if (next >= screenWidthDp - 16) 0 else next
+                                        dragWidgetWidth = stored
+                                        prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
+                                    },
+                                )
+                            }
                         }
                     }
                     if (moveMode) {
@@ -465,7 +528,7 @@ fun HomeScreen(
                                     it.copy(clockTopDp = DiablePrefs().clockTopDp, widgetHeightDp = 0)
                                 }
                             },
-                            onResize = if (prefs.widgetAppWidgetId >= 0) {
+                            onResize = if (widgetIds.isNotEmpty()) {
                                 { stepDp ->
                                     val next = (widgetHeightDp + stepDp).coerceIn(64, (screenHeightDp * 0.7f).toInt())
                                     prefsRepo.launchUpdate { it.copy(widgetHeightDp = next, fillScreenWidget = false) }
@@ -489,6 +552,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.padding(top = 16.dp)) {
                         HomePromo.entries
                             .filter { it.name !in prefs.dismissedPromos }
+                            .filter { it != HomePromo.Accessibility || DiableAccessibilityService.available }
                             .forEach { promo ->
                                 HomePromoRow(
                                     promo = promo,
@@ -498,7 +562,6 @@ fun HomeScreen(
                                             }
                                         when (promo) {
                                             HomePromo.Accessibility -> DiableAccessibilityService.openSettings(context)
-                                            HomePromo.Pro -> onNavigate(Routes.DiablePro)
                                             HomePromo.Customize -> onNavigate(Routes.Themes)
                                             HomePromo.Productivity -> onNavigate(Routes.Productivity)
                                         }
@@ -591,24 +654,45 @@ fun HomeScreen(
         )
     }
     if (showAccessPrompt == "lock") {
+        val lockAvailable = DiableAccessibilityService.available
         AlertDialog(
             onDismissRequest = { showAccessPrompt = null },
             containerColor = DiableCard,
-            title = { Text("Allow Quick Lock", color = DiableText) },
+            title = {
+                Text(
+                    if (lockAvailable) "Allow Quick Lock" else SideloadLimits.TITLE,
+                    color = DiableText,
+                )
+            },
             text = {
                 Text(
-                    "To lock your screen, turn on this launcher under Accessibility → Installed apps.",
+                    if (lockAvailable) {
+                        "To lock your screen, turn on this launcher under Accessibility → Installed apps."
+                    } else {
+                        SideloadLimits.LOCK_BODY
+                    },
                     color = DiableTextMuted,
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     showAccessPrompt = null
-                    DiableAccessibilityService.openSettings(context)
-                }) { Text("Open settings", color = DiableAccentText) }
+                    if (lockAvailable) DiableAccessibilityService.openSettings(context)
+                }) {
+                    Text(
+                        if (lockAvailable) "Open settings" else "Okay",
+                        color = DiableAccentText,
+                    )
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { showAccessPrompt = null }) { Text("Cancel", color = DiableTextMuted) }
+            dismissButton = if (lockAvailable) {
+                {
+                    TextButton(onClick = { showAccessPrompt = null }) {
+                        Text("Cancel", color = DiableTextMuted)
+                    }
+                }
+            } else {
+                null
             },
         )
     }
@@ -685,6 +769,65 @@ private fun MusicAppsOnHeadphones(enabled: Boolean, onConnected: () -> Unit) {
         }
         audio.registerAudioDeviceCallback(callback, android.os.Handler(android.os.Looper.getMainLooper()))
         onDispose { audio.unregisterAudioDeviceCallback(callback) }
+    }
+}
+
+/**
+ * Sits under a home-screen widget. Drag it up or down to set the height.
+ * The side buttons set the width; widening all the way returns to full width.
+ */
+@Composable
+private fun WidgetResizeBar(
+    onHeightDrag: (Float) -> Unit,
+    onHeightDragEnd: () -> Unit,
+    onNarrower: () -> Unit,
+    onWider: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    androidx.compose.foundation.layout.Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(DiableAccent.copy(alpha = 0.92f))
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.IconButton(onClick = onNarrower) {
+            androidx.compose.material3.Icon(
+                Icons.Default.Remove,
+                contentDescription = "Narrower widget",
+                tint = Color(0xFF132569),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragEnd = onHeightDragEnd,
+                        onVerticalDrag = { change, amount ->
+                            change.consume()
+                            onHeightDrag(with(density) { amount.toDp().value })
+                        },
+                    )
+                }
+                .padding(vertical = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.Text(
+                text = "Drag to resize",
+                color = Color(0xFF132569),
+                fontSize = 14.sp,
+            )
+        }
+        androidx.compose.material3.IconButton(onClick = onWider) {
+            androidx.compose.material3.Icon(
+                Icons.Default.Add,
+                contentDescription = "Wider widget",
+                tint = Color(0xFF132569),
+            )
+        }
     }
 }
 

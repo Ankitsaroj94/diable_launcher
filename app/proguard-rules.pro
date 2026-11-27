@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# The full flavor registers these from the manifest. The sideload flavor replaces
+# them with stubs of the same name; keeping the name is harmless there.
+-keep class in.ankitsaroj.diable.service.DiableNotificationListener { *; }
+-keep class in.ankitsaroj.diable.service.DiableAccessibilityService { *; }

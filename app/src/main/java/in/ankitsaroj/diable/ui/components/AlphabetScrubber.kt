@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
@@ -64,6 +65,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -177,7 +179,11 @@ fun AlphabetScrubber(
 
     // --- Scrubbing -----------------------------------------------------------------------
     var touchY by remember { mutableStateOf<Float?>(null) }
+    var fingerRoot by remember { mutableStateOf<Offset?>(null) }
     var dragBoxTop by remember { mutableFloatStateOf(0f) }
+    var dragBoxLeft by remember { mutableFloatStateOf(0f) }
+    var pickedPackage by remember { mutableStateOf<String?>(null) }
+    var previewTop by remember { mutableFloatStateOf(0f) }
     var columnHeight by remember { mutableFloatStateOf(0f) }
     val letterPositions = remember { mutableStateMapOf<Char, Float>() }
     val letterXPositions = remember { mutableStateMapOf<Char, Float>() }
@@ -219,6 +225,7 @@ fun AlphabetScrubber(
     val topGestures = remember(listState) {
         object : NestedScrollConnection {
             private var pull = 0f
+            private var pullX = 0f
             private var gestureStarted = false
             private var startedAtTop = false
 
@@ -233,9 +240,11 @@ fun AlphabetScrubber(
                     // with more favorites than fit, the list must scroll to reach them.
                     startedAtTop = atTop() && topBlockHeight <= viewportHeight
                     pull = 0f
+                    pullX = 0f
                 }
                 if (!startedAtTop) return Offset.Zero
                 pull += available.y
+                pullX += available.x
                 // Swallow the drag: at rest the list does not scroll, the swipe is a gesture.
                 return Offset(0f, available.y)
             }
@@ -243,15 +252,19 @@ fun AlphabetScrubber(
             override suspend fun onPreFling(available: Velocity): Velocity {
                 val wasTop = startedAtTop
                 val distance = pull
+                val sideways = pullX
                 gestureStarted = false
                 startedAtTop = false
                 pull = 0f
+                pullX = 0f
                 if (!wasTop) return Velocity.Zero
-                val threshold = with(density) { 48.dp.toPx() }
-                when {
-                    distance < -threshold || available.y < -1500f -> currentActions.onSwipeUpAtTop()
-                    distance > threshold || available.y > 1500f -> currentActions.onSwipeDownAtTop()
+                // A long, mostly vertical pull. Short flicks and sideways drags must not
+                // open search — that was stealing the home-button and app-swipe gestures.
+                val threshold = with(density) { 120.dp.toPx() }
+                if (abs(distance) < threshold || abs(sideways) > abs(distance) * 0.6f) {
+                    return Velocity.Zero
                 }
+                if (distance < 0) currentActions.onSwipeUpAtTop() else currentActions.onSwipeDownAtTop()
                 return available
             }
         }
@@ -261,6 +274,18 @@ fun AlphabetScrubber(
     // (it drives haptics and the jump on release), which showed the previous letter's apps.
     val shownLetter = if (touchY != null) letterAtPeak ?: selectedLetter else null
     val scrubbing = touchY != null && !cancelled && shownLetter != null
+    val previewApps = when (shownLetter) {
+        STAR -> favorites.filterIsInstance<FavoriteEntry.App>().map { it.app }
+        null, FOOTER -> emptyList()
+        else -> groupedApps[shownLetter].orEmpty()
+    }
+    val currentPreview by rememberUpdatedState(previewApps)
+    val currentPick by rememberUpdatedState(pickedPackage)
+    LaunchedEffect(pickedPackage) {
+        if (pickedPackage != null && allowHaptic) {
+            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    }
     var boxOrigin by remember { mutableStateOf(Offset.Zero) }
 
     Box(modifier = modifier.fillMaxSize().onGloballyPositioned { boxOrigin = it.positionInRoot() }) {
@@ -331,27 +356,33 @@ fun AlphabetScrubber(
             }
         }
 
-        // The picked letter's apps, shown while the finger is on the alphabet.
-        if (scrubbing) {
+        // The picked letter's apps, starting beside that letter so a sideways slide lands on one.
+        if (scrubbing && previewApps.isNotEmpty()) {
+            val rowPx = with(density) { 58.dp.toPx() }
+            val listHeight = previewApps.size * rowPx
+            val anchor = touchRootY ?: boxOrigin.y
+            val minTop = boxOrigin.y
+            val maxTop = (boxOrigin.y + viewportHeight - listHeight).coerceAtLeast(minTop)
+            // First row's center sits on the finger. Near the bottom of the alphabet the
+            // whole list shifts up just enough to stay on screen.
+            val topInRoot = (anchor - rowPx / 2f).coerceIn(minTop, maxTop)
+            val previewShift = (topInRoot - boxOrigin.y).toInt()
             Column(
                 modifier = Modifier
-                    .padding(start = 48.dp, end = listContentEndPadding, top = 140.dp),
+                    .padding(start = 48.dp, end = 80.dp)
+                    .offset { IntOffset(0, previewShift) }
+                    .onGloballyPositioned { previewTop = it.positionInRoot().y },
             ) {
-                when (val letter = shownLetter) {
-                    STAR -> favorites.filterIsInstance<FavoriteEntry.App>().forEach {
-                        key(it.app.packageName) {
-                            HomeAppRow(it.app, accentColor, textColor, iconStyle, actions = actions)
-                        }
-                    }
-                    FOOTER -> LetterHeader("Diable Launcher", textColor)
-                    null -> Unit
-                    else -> {
-                        LetterHeader(letter.toString(), textColor)
-                        groupedApps[letter].orEmpty().forEach { app ->
-                            key(app.packageName) {
-                                HomeAppRow(app, accentColor, textColor, iconStyle, actions = actions)
-                            }
-                        }
+                previewApps.forEach { app ->
+                    key(app.packageName) {
+                        HomeAppRow(
+                            app = app,
+                            accentColor = accentColor,
+                            textColor = textColor,
+                            iconStyle = iconStyle,
+                            highlighted = app.packageName == pickedPackage,
+                            actions = actions,
+                        )
                     }
                 }
             }
@@ -363,7 +394,10 @@ fun AlphabetScrubber(
                     .fillMaxHeight()
                     .width(72.dp)
                     .align(Alignment.CenterEnd)
-                    .onGloballyPositioned { dragBoxTop = it.positionInRoot().y }
+                    .onGloballyPositioned {
+                        dragBoxTop = it.positionInRoot().y
+                        dragBoxLeft = it.positionInRoot().x
+                    }
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = { offset -> nearestLetter(offset.y)?.let(::jumpTo) },
@@ -378,25 +412,42 @@ fun AlphabetScrubber(
                         )
                     }
                     .pointerInput(Unit) {
-                        val cancelDistance = 160.dp.toPx()
                         detectDragGestures(
                             onDragStart = { start ->
                                 cancelled = false
                                 touchY = start.y
+                                fingerRoot = Offset(start.x + dragBoxLeft, start.y + dragBoxTop)
                             },
                             onDrag = { change, _ ->
-                                touchY = change.position.y
-                                // Dragging well away from the alphabet abandons the scrub.
-                                cancelled = change.position.x < -cancelDistance
+                                val rootY = change.position.y + dragBoxTop
+                                fingerRoot = Offset(change.position.x + dragBoxLeft, rootY)
+                                val intoList = change.position.x < -with(density) { 24.dp.toPx() }
+                                val appsNow = currentPreview
+                                if (intoList && appsNow.isNotEmpty()) {
+                                    val row = with(density) { 58.dp.toPx() }
+                                    val index = ((rootY - previewTop) / row).toInt()
+                                    pickedPackage = appsNow.getOrNull(index.coerceIn(0, appsNow.lastIndex))?.packageName
+                                } else {
+                                    pickedPackage = null
+                                    touchY = change.position.y
+                                }
                             },
                             onDragEnd = {
                                 val letter = selectedLetter
-                                if (!cancelled && letter != null) jumpTo(letter)
+                                val target = currentPreview.find { it.packageName == currentPick }
+                                if (target != null) {
+                                    currentActions.onLaunch(target)
+                                } else if (!cancelled && letter != null) {
+                                    jumpTo(letter)
+                                }
+                                pickedPackage = null
                                 touchY = null
+                                fingerRoot = null
                                 cancelled = false
                             },
                             onDragCancel = {
                                 touchY = null
+                                fingerRoot = null
                                 cancelled = false
                             },
                         )
@@ -476,6 +527,7 @@ fun HomeAppRow(
     iconStyle: IconStyle,
     modifier: Modifier = Modifier,
     showLabel: Boolean = true,
+    highlighted: Boolean = false,
     notifications: List<AppNotification> = emptyList(),
     actions: HomeListActions,
 ) {
@@ -516,8 +568,10 @@ fun HomeAppRow(
                 onLongClick = { actions.onLongPress(app) },
             )
             .graphicsLayer { translationX = shift * 0.4f }
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (highlighted) accentColor.copy(alpha = 0.35f) else Color.Transparent)
             // 48dp icon + 5dp above/below == Diable's 58dp row pitch.
-            .padding(vertical = 5.dp),
+            .padding(vertical = 5.dp, horizontal = if (highlighted) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box {

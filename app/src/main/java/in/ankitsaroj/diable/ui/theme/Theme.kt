@@ -19,8 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import `in`.ankitsaroj.diable.data.CustomFonts
 import `in`.ankitsaroj.diable.data.LocalDiableRepos
 import `in`.ankitsaroj.diable.data.DiablePrefs
 
@@ -73,17 +75,20 @@ private fun diableColorScheme(accent: Color, background: Color, palette: DiableP
  */
 @Composable
 fun DiableTheme(
-    font: ThemeFont = ThemeFont.Rounded,
     fontScale: Float? = null,
     darkText: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
     val prefs by LocalDiableRepos.current.prefs.prefsFlow.collectAsState(initial = DiablePrefs())
+    val context = LocalContext.current
     val scale = (fontScale ?: prefs.fontScale).coerceIn(0.8f, 1.4f)
     val darkHomeText = darkText ?: prefs.darkText
     val accent = Color(prefs.accentColorArgb)
+    val family = remember(prefs.fontKey, prefs.customFontPath) {
+        CustomFonts.family(context, prefs.fontKey, prefs.customFontPath)
+    }
 
-    val typography = remember(font) { typographyFor(font.family) }
+    val typography = remember(family) { typographyFor(family) }
     // Global settings → Dark Theme. Both "device" modes follow the system night mode;
     // Pitch-Black only means something while dark.
     val systemDark = isSystemInDarkTheme()
@@ -126,7 +131,7 @@ fun DiableTheme(
         // Nothing wraps the app in a Surface, so bare Text() would fall back to Roboto.
         // Seed LocalTextStyle so the rounded face applies everywhere by default.
         CompositionLocalProvider(
-            LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = font.family),
+            LocalTextStyle provides LocalTextStyle.current.copy(fontFamily = family),
             LocalDensity provides scaledDensity,
             LocalHomeTextColor provides if (darkHomeText) HomeTextDark else Color.White,
             LocalDiableBg provides background,

@@ -25,9 +25,11 @@ enum class LegalDoc(val title: String, val sections: List<Pair<String, String>>)
                 "Diable has no account, no analytics and no ads. It does not collect, " +
                 "sell or share personal data.",
             "What stays on your device" to
-                "Your favorites, hidden apps, themes, usage counts, calendar events, contacts " +
-                "and notifications are read and stored only on this device. Notification " +
-                "access is used to show notifications and media controls on your home screen.",
+                "Your favorites, hidden apps, themes, usage counts, calendar events and contacts " +
+                "stay on this device. The full build can also read notifications, to show dots, " +
+                "quick replies and media controls, and can use an accessibility service only to " +
+                "lock the screen. The sideload build declares neither. None of that data leaves " +
+                "the device.",
             "Network requests" to
                 "Only two features reach the internet: wallpapers are downloaded from the " +
                 "Openverse API, and weather is fetched for your approximate location when you " +

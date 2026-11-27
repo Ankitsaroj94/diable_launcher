@@ -1,5 +1,6 @@
 package `in`.ankitsaroj.diable.ui.screens
 
+import `in`.ankitsaroj.diable.ui.permissions.requestDefaultHomeIntent
 import `in`.ankitsaroj.diable.ui.theme.DiableAccentText
 import `in`.ankitsaroj.diable.ui.theme.DiableText
 import android.content.Intent
@@ -150,9 +151,9 @@ fun AdvancedScreen(
             DiableSettingsRow(
                 title = "Change default launcher",
                 onClick = {
-                    context.startActivity(
-                        Intent(Settings.ACTION_HOME_SETTINGS),
-                    )
+                    val intent = requestDefaultHomeIntent(context)
+                        ?: Intent(Settings.ACTION_HOME_SETTINGS)
+                    runCatching { context.startActivity(intent) }
                 },
             )
             DiableSettingsRow(

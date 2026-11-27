@@ -101,6 +101,7 @@ import `in`.ankitsaroj.diable.data.DiablePrefs
 import `in`.ankitsaroj.diable.model.AppInfo
 import `in`.ankitsaroj.diable.navigation.Routes
 import `in`.ankitsaroj.diable.service.AppNotification
+import `in`.ankitsaroj.diable.service.DiableAccessibilityService
 import `in`.ankitsaroj.diable.service.DiableNotificationListener
 import `in`.ankitsaroj.diable.ui.components.AppIcon
 import `in`.ankitsaroj.diable.ui.components.DiableBottomSheet
@@ -200,7 +201,7 @@ fun AppPopupOverlay(
                         onDismiss()
                         onLaunch(request.app)
                     }
-                    // Diable Pro's pop-up widget: the app's own widget, right in the card.
+                    // The app's own widget, right in the card.
                     prefs.popupWidgets[request.app.packageName]?.let { widgetId ->
                         val heightDp = remember(widgetId) {
                             runCatching {
@@ -1117,9 +1118,11 @@ private fun ButtonActionPicker(apps: List<AppInfo>, onDismiss: () -> Unit, onPic
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
-            ButtonAction.entries.forEach { action ->
-                MenuRow(action.icon, action.label) { onPick(action.key) }
-            }
+            ButtonAction.entries
+                .filter { it != ButtonAction.LockScreen || DiableAccessibilityService.available }
+                .forEach { action ->
+                    MenuRow(action.icon, action.label) { onPick(action.key) }
+                }
             MenuRow(Icons.Default.Close, "No action") { onPick(null) }
             Text(
                 "Apps",

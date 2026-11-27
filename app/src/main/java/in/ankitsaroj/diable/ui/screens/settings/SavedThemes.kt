@@ -1,10 +1,14 @@
 package `in`.ankitsaroj.diable.ui.screens.settings
 
+import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.BitmapFactory
 import androidx.core.content.edit
 import `in`.ankitsaroj.diable.data.DiablePrefs
+import `in`.ankitsaroj.diable.wallpaper.DiableLiveWallpaper
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 
 /**
  * The look-and-feel slice of [DiablePrefs]: what a theme is. Used by the theme editor's
@@ -27,6 +31,11 @@ data class ThemeSnapshot(
     val dimWallpaper: Boolean,
     val pitchBlackTheme: Boolean,
     val gradientWallpaper: String?,
+    /** JPEG saved with the theme, so applying it restores the picture. */
+    val wallpaperFile: String? = null,
+    val wallpaperCredit: String? = null,
+    /** One of the built-in live wallpapers, or null. */
+    val liveStyle: String? = null,
 ) {
     fun applyTo(prefs: DiablePrefs): DiablePrefs = prefs.copy(
         fontKey = fontKey,
@@ -42,10 +51,39 @@ data class ThemeSnapshot(
         dimWallpaper = dimWallpaper,
         pitchBlackTheme = pitchBlackTheme,
     ).let { p ->
-        if (gradientWallpaper != null) {
-            p.copy(wallpaperUri = gradientWallpaper, wallpaperCredit = null, wallpaperTopLuminance = -1f)
-        } else {
-            p
+        when {
+            liveStyle != null -> p.copy(
+                wallpaperUri = "live:$liveStyle",
+                wallpaperCredit = "Live wallpaper",
+                wallpaperTopLuminance = -1f,
+            )
+            wallpaperFile != null -> p.copy(
+                wallpaperUri = "file:$wallpaperFile",
+                wallpaperCredit = wallpaperCredit,
+                wallpaperTopLuminance = -1f,
+            )
+            gradientWallpaper != null -> p.copy(
+                wallpaperUri = gradientWallpaper,
+                wallpaperCredit = null,
+                wallpaperTopLuminance = -1f,
+            )
+            else -> p
+        }
+    }
+
+    /** Puts the saved picture or live wallpaper on the system home screen. */
+    fun applyWallpaper(context: Context) {
+        runCatching {
+            when {
+                liveStyle != null -> DiableLiveWallpaper.request(context, liveStyle)
+                wallpaperFile != null && File(wallpaperFile).isFile -> {
+                    val bitmap = BitmapFactory.decodeFile(wallpaperFile) ?: return
+                    WallpaperManager.getInstance(context).setBitmap(bitmap)
+                    bitmap.recycle()
+                }
+                gradientWallpaper != null ->
+                    `in`.ankitsaroj.diable.ui.theme.applyWallpaperFromPrefs(context, gradientWallpaper)
+            }
         }
     }
 
@@ -63,6 +101,9 @@ data class ThemeSnapshot(
         .put("dimWallpaper", dimWallpaper)
         .put("pitchBlackTheme", pitchBlackTheme)
         .put("gradientWallpaper", gradientWallpaper ?: JSONObject.NULL)
+        .put("wallpaperFile", wallpaperFile ?: JSONObject.NULL)
+        .put("wallpaperCredit", wallpaperCredit ?: JSONObject.NULL)
+        .put("liveStyle", liveStyle ?: JSONObject.NULL)
 
     companion object {
         fun of(prefs: DiablePrefs) = ThemeSnapshot(
@@ -79,6 +120,9 @@ data class ThemeSnapshot(
             dimWallpaper = prefs.dimWallpaper,
             pitchBlackTheme = prefs.pitchBlackTheme,
             gradientWallpaper = prefs.wallpaperUri?.takeIf { it.startsWith("gradient:") },
+            wallpaperFile = prefs.wallpaperUri?.removePrefix("file:")?.takeIf { prefs.wallpaperUri.startsWith("file:") },
+            wallpaperCredit = prefs.wallpaperCredit,
+            liveStyle = prefs.wallpaperUri?.removePrefix("live:")?.takeIf { prefs.wallpaperUri.startsWith("live:") },
         )
 
         /** Parses theme JSON, using [base] for anything missing. Throws on non-JSON. */
@@ -100,6 +144,9 @@ data class ThemeSnapshot(
                 dimWallpaper = o.optBoolean("dimWallpaper", d.dimWallpaper),
                 pitchBlackTheme = o.optBoolean("pitchBlackTheme", d.pitchBlackTheme),
                 gradientWallpaper = optStringOrNull("gradientWallpaper"),
+                wallpaperFile = optStringOrNull("wallpaperFile"),
+                wallpaperCredit = optStringOrNull("wallpaperCredit"),
+                liveStyle = optStringOrNull("liveStyle"),
             )
         }
     }

@@ -18,7 +18,6 @@ object Routes {
     const val MusicApps = "music_apps"
     const val CalendarAgenda = "calendar_agenda"
     const val Changelog = "changelog"
-    const val DiablePro = "diable_pro"
     const val HelpFeedback = "help_feedback"
     const val Community = "community"
     const val CreateTheme = "create_theme"

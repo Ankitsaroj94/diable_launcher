@@ -1,6 +1,7 @@
 package `in`.ankitsaroj.diable.ui.screens
 
 import `in`.ankitsaroj.diable.ui.theme.DiableText
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +46,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun ClockStyleScreen(navController: NavController) {
+    BackHandler { navController.popBackStack() }
     val context = LocalContext.current
     val prefsRepo = LocalDiableRepos.current.prefs
     val prefs by prefsRepo.prefsFlow.collectAsState(initial = DiablePrefs())

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.MusicNote
@@ -35,6 +37,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalContext
 import `in`.ankitsaroj.diable.service.DiableNotificationListener
+import `in`.ankitsaroj.diable.service.SideloadLimits
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableCard
 import `in`.ankitsaroj.diable.ui.theme.DiableTextMuted
@@ -72,10 +75,26 @@ fun DiableWidgetSheetContent(
     val prefs by repos.prefs.prefsFlow.collectAsState(initial = `in`.ankitsaroj.diable.data.DiablePrefs())
     val scope = rememberCoroutineScope()
     var showCalendarSheet by remember { mutableStateOf(false) }
+    var showResizeSheet by remember { mutableStateOf(false) }
     var showWeatherSheet by remember { mutableStateOf(false) }
     var showCitySearch by remember { mutableStateOf(false) }
     var showAccessDialog by remember { mutableStateOf(false) }
+    var showSideloadLimit by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    if (showSideloadLimit) {
+        AlertDialog(
+            onDismissRequest = { showSideloadLimit = false },
+            containerColor = DiableCard,
+            title = { Text(SideloadLimits.TITLE, color = DiableText) },
+            text = { Text(SideloadLimits.NOTIFICATION_BODY, color = DiableTextMuted) },
+            confirmButton = {
+                TextButton(onClick = { showSideloadLimit = false }) {
+                    Text("Okay", color = DiableAccentText)
+                }
+            },
+        )
+    }
 
     if (showAccessDialog) {
         AlertDialog(
@@ -158,6 +177,86 @@ fun DiableWidgetSheetContent(
         return
     }
 
+    if (showResizeSheet) {
+        BackHandler { showResizeSheet = false }
+        val screenDp = context.resources.displayMetrics.widthPixels /
+            context.resources.displayMetrics.density
+        Column(modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)) {
+            Text(
+                text = "Resize widget",
+                modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
+                fontSize = 23.sp,
+                color = DiableText,
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Remove,
+                title = "Smaller clock",
+                subtitle = "${(prefs.clockScale * 100).toInt()}%",
+                onClick = {
+                    val next = (prefs.clockScale - 0.1f).coerceAtLeast(0.7f)
+                    repos.prefs.launchUpdate { it.copy(clockScale = next) }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Add,
+                title = "Larger clock",
+                subtitle = "Grows the clock on the home screen",
+                onClick = {
+                    val next = (prefs.clockScale + 0.1f).coerceAtMost(1.6f)
+                    repos.prefs.launchUpdate { it.copy(clockScale = next) }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Remove,
+                title = "Shorter",
+                subtitle = "Custom widget height",
+                onClick = {
+                    val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetHeightDp = (base - 40).coerceAtLeast(64), fillScreenWidget = false)
+                    }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Add,
+                title = "Taller",
+                subtitle = "Custom widget height",
+                onClick = {
+                    val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetHeightDp = (base + 40).coerceAtMost(720), fillScreenWidget = false)
+                    }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.AspectRatio,
+                title = "Narrower",
+                subtitle = "Custom widget width",
+                onClick = {
+                    val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screenDp.toInt()
+                    val next = (base - 48).coerceAtLeast(140)
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetWidthDp = if (next >= screenDp.toInt() - 16) 0 else next)
+                    }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.AspectRatio,
+                title = "Wider",
+                subtitle = "Custom widget width",
+                onClick = {
+                    val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screenDp.toInt()
+                    val next = (base + 48).coerceAtMost(screenDp.toInt())
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetWidthDp = if (next >= screenDp.toInt() - 16) 0 else next)
+                    }
+                },
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        return
+    }
+
     if (showCalendarSheet) {
         CalendarSettingsSheet(onDismiss = { showCalendarSheet = false })
         return
@@ -216,14 +315,28 @@ fun DiableWidgetSheetContent(
             },
         )
         DiableSettingCard(
+            icon = Icons.Default.AspectRatio,
+            title = "Resize widget",
+            subtitle = "Clock size, and a custom widget's height and width",
+            onClick = { showResizeSheet = true },
+        )
+        DiableSettingCard(
             icon = Icons.Default.MusicNote,
             title = "Show Media Widget",
-            subtitle = "While playing music",
-            checked = prefs.showMediaWidget,
-            onCheckedChange = {
+            subtitle = if (DiableNotificationListener.available) {
+                "While playing music"
+            } else {
+                SideloadLimits.ROW_NOTE
+            },
+            checked = prefs.showMediaWidget && DiableNotificationListener.available,
+            onCheckedChange = { enabled ->
+                if (enabled && !DiableNotificationListener.available) {
+                    showSideloadLimit = true
+                    return@DiableSettingCard
+                }
                 // Media sessions are only readable with notification access.
-                if (it && !DiableNotificationListener.isEnabled(context)) showAccessDialog = true
-                repos.prefs.launchUpdate { p -> p.copy(showMediaWidget = it, mediaPlayer = it) }
+                if (enabled && !DiableNotificationListener.isEnabled(context)) showAccessDialog = true
+                repos.prefs.launchUpdate { p -> p.copy(showMediaWidget = enabled, mediaPlayer = enabled) }
             },
         )
         DiableSettingCard(

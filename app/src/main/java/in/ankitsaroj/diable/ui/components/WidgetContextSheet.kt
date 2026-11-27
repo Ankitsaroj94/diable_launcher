@@ -6,6 +6,9 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
+import `in`.ankitsaroj.diable.ui.theme.DiableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AspectRatio
@@ -13,11 +16,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.OpenWith
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -69,9 +73,82 @@ fun WidgetContextSheet(
                 onDismiss()
             },
         )
+        Text(
+            text = "Resize widget",
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+            fontSize = 23.sp,
+            color = DiableText,
+        )
         DiableSettingCard(
-            title = "Move and resize",
+            title = "Smaller clock",
+            subtitle = "${(prefs.clockScale * 100).toInt()}%",
+            icon = Icons.Default.Remove,
+            onClick = {
+                prefsRepo.launchUpdate {
+                    it.copy(clockScale = (prefs.clockScale - 0.1f).coerceAtLeast(0.7f))
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Larger clock",
+            icon = Icons.Default.Add,
+            onClick = {
+                prefsRepo.launchUpdate {
+                    it.copy(clockScale = (prefs.clockScale + 0.1f).coerceAtMost(1.6f))
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Shorter",
+            subtitle = "Reduce the widget height",
+            icon = Icons.Default.Remove,
+            onClick = {
+                val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                prefsRepo.launchUpdate {
+                    it.copy(widgetHeightDp = (base - 40).coerceAtLeast(64), fillScreenWidget = false)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Taller",
+            subtitle = "Increase the widget height",
+            icon = Icons.Default.Add,
+            onClick = {
+                val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                prefsRepo.launchUpdate {
+                    it.copy(widgetHeightDp = (base + 40).coerceAtMost(720), fillScreenWidget = false)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Narrower",
             icon = Icons.Default.AspectRatio,
+            onClick = {
+                val screen = context.resources.displayMetrics.widthPixels /
+                    context.resources.displayMetrics.density
+                val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screen.toInt()
+                val next = (base - 48).coerceAtLeast(140)
+                prefsRepo.launchUpdate {
+                    it.copy(widgetWidthDp = if (next >= screen.toInt() - 16) 0 else next)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Wider",
+            icon = Icons.Default.AspectRatio,
+            onClick = {
+                val screen = context.resources.displayMetrics.widthPixels /
+                    context.resources.displayMetrics.density
+                val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screen.toInt()
+                val next = (base + 48).coerceAtMost(screen.toInt())
+                prefsRepo.launchUpdate {
+                    it.copy(widgetWidthDp = if (next >= screen.toInt() - 16) 0 else next)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Move",
+            icon = Icons.Default.OpenWith,
             onClick = {
                 onDismiss()
                 `in`.ankitsaroj.diable.ui.screens.HomeCommands.moveWidget.value = true
@@ -162,14 +239,6 @@ fun WidgetContextSheet(
             onClick = {
                 onDismiss()
                 onNavigate(Routes.DiableSettings)
-            },
-        )
-        DiableSettingCard(
-            title = "Diable Pro",
-            icon = Icons.Default.WorkspacePremium,
-            onClick = {
-                onDismiss()
-                onNavigate(Routes.DiablePro)
             },
         )
         Spacer(modifier = Modifier.height(16.dp))

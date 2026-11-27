@@ -45,6 +45,12 @@ object IconPackRepository {
         "com.fede.launcher.THEME_ICONPACK",
         "com.dlto.atom.launcher.THEME",
         "ch.deletescape.lawnchair.ICONPACK",
+        "app.lawnchair.ICONPACK",
+        "com.lge.launcher2.THEME",
+        "ginlemon.smartlauncher.THEMES",
+        "com.gtp.nextlauncher.theme",
+        "com.phonemetra.turbo.launcher.icons.ACTION_PICK_ICON",
+        "com.gridappsinc.launcher.theme.apk_action",
     )
 
     fun installed(context: Context): List<InstalledIconPack> {
@@ -52,8 +58,15 @@ object IconPackRepository {
         val seen = LinkedHashMap<String, InstalledIconPack>()
         for (action in PACK_ACTIONS) {
             val matches = try {
-                @Suppress("DEPRECATION")
-                pm.queryIntentActivities(Intent(action), PackageManager.GET_META_DATA)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    pm.queryIntentActivities(
+                        Intent(action),
+                        PackageManager.ResolveInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.queryIntentActivities(Intent(action), PackageManager.GET_META_DATA)
+                }
             } catch (_: Exception) {
                 emptyList()
             }

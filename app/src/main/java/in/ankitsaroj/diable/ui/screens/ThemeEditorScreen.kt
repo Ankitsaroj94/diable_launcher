@@ -110,9 +110,11 @@ fun ThemeEditorScreen(navController: NavController) {
     }
     val discardAndExit: () -> Unit = {
         val original = entryTheme
-        scope.launch {
-            if (original != null) repos.prefs.update { original.applyTo(it) }
-            navController.popBackStack()
+        // Leave immediately. Restoring the previous look can wait; doing it first
+        // made Back feel like it did nothing.
+        navController.popBackStack()
+        if (original != null) {
+            scope.launch { repos.prefs.update { original.applyTo(it) } }
         }
     }
     BackHandler(onBack = discardAndExit)

@@ -11,8 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import `in`.ankitsaroj.diable.data.WallpaperCatalog
 import androidx.compose.ui.graphics.toArgb
+import java.io.File
 
 /**
  * Gradient fallbacks keyed as "gradient:<Category>". A web wallpaper is applied as the
@@ -67,4 +70,17 @@ private fun gradientBitmap(colors: List<Int>, width: Int, height: Int): Bitmap {
 fun Modifier.wallpaperBackground(wallpaperUri: String?): Modifier {
     val brush = wallpaperUri?.let { WallpaperCategories.brushForKey(it) }
     return if (brush != null) then(Modifier.background(brush)) else this
+}
+
+/** Draws a saved wallpaper file. A missing or failed file stays transparent instead of black. */
+@Composable
+fun SavedWallpaperImage(path: String, modifier: Modifier = Modifier) {
+    val file = File(path)
+    if (!file.isFile) return
+    AsyncImage(
+        model = file,
+        contentDescription = null,
+        modifier = modifier,
+        contentScale = ContentScale.Crop,
+    )
 }

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.StarOutline
@@ -30,7 +29,7 @@ import `in`.ankitsaroj.diable.ui.components.LavenderIconCircle
  * left, a sentence, and a right-aligned underlined action beneath it. They are dismissed
  * individually once acted on.
  */
-enum class HomePromo { Accessibility, Pro, Customize, Productivity }
+enum class HomePromo { Accessibility, Customize, Productivity }
 
 private data class PromoSpec(
     val icon: ImageVector,
@@ -43,11 +42,6 @@ private fun specFor(promo: HomePromo) = when (promo) {
         Icons.Default.Info,
         "Some features use Accessibility access when turned on in Settings",
         "Learn more",
-    )
-    HomePromo.Pro -> PromoSpec(
-        Icons.Default.AutoAwesome,
-        "Make the most out of Diable Pro",
-        "Show Diable Pro features",
     )
     HomePromo.Customize -> PromoSpec(
         Icons.Default.Brush,

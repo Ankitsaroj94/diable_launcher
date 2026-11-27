@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -83,11 +82,6 @@ fun DiableSettingsScreen(
                 icon = Icons.Default.Palette,
                 summary = "Give your home screen your personal touch",
                 onClick = { onNavigate(Routes.Themes) },
-            )
-            DiableSettingsRow(
-                title = "Diable Pro",
-                icon = Icons.Default.Star,
-                onClick = { onNavigate(Routes.DiablePro) },
             )
             DiableSettingsRow(
                 title = "Help & Feedback",

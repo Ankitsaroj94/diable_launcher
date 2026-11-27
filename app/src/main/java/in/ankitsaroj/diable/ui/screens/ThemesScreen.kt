@@ -1,5 +1,6 @@
 package `in`.ankitsaroj.diable.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import `in`.ankitsaroj.diable.ui.components.ThemeScreenScaffold
 
 @Composable
 fun ThemesScreen(navController: NavController) {
+    BackHandler { navController.popBackStack() }
     ThemeScreenScaffold(
         header = { PillHeader("Themes") },
     ) {

@@ -1,8 +1,6 @@
 package `in`.ankitsaroj.diable.ui.components
 
 import `in`.ankitsaroj.diable.ui.theme.DiableText
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import `in`.ankitsaroj.diable.data.IconPackRepository
+import `in`.ankitsaroj.diable.data.openPlayStoreSearch
 import `in`.ankitsaroj.diable.data.IconStyle
 import `in`.ankitsaroj.diable.data.InstalledIconPack
 import `in`.ankitsaroj.diable.data.LocalDiableRepos
@@ -81,8 +81,12 @@ fun IconStyleSheet(onDismiss: () -> Unit) {
     val accent = Color(prefs.accentColorArgb)
 
     var packs by remember { mutableStateOf<List<InstalledIconPack>?>(null) }
-    LaunchedEffect(Unit) {
-        packs = withContext(Dispatchers.IO) { IconPackRepository.installed(context) }
+    // Refresh after the user comes back from the Play Store with a new pack.
+    LifecycleResumeEffect(Unit) {
+        scope.launch {
+            packs = withContext(Dispatchers.IO) { IconPackRepository.installed(context) }
+        }
+        onPauseOrDispose { }
     }
 
     // Preview with the user's own favorites so each style is judged on real icons.
@@ -189,24 +193,8 @@ fun IconStyleSheet(onDismiss: () -> Unit) {
             DiableSettingCard(
                 icon = Icons.Default.Download,
                 title = "Get icon packs",
-                subtitle = "Any ADW / Nova compatible pack works",
-                onClick = {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=icon%20pack&c=apps"))
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    }.onFailure {
-                        runCatching {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://play.google.com/store/search?q=icon%20pack&c=apps"),
-                                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                            )
-                        }
-                    }
-                },
+                subtitle = "Opens the Play Store. Install a pack, come back, and it shows up here.",
+                onClick = { openPlayStoreSearch(context, "icon pack") },
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

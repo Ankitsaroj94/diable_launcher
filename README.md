@@ -42,13 +42,17 @@ It exists because a launcher is the most personal app on a phone, and it should 
 
 ## Features
 
+Notification dots, quick replies, the home-screen media player, Notification Summary and
+Quick Lock ship in the **full** build. The default sideload build leaves them out so
+Play Protect can install it. See [Play Protect and the two builds](#play-protect-and-the-two-builds).
+
 **Home and navigation**
 - One continuous list: clock and favorites at the top, every app A–Z below, and a
   "Diable Launcher" footer with *Recently installed* and settings
 - Curved **alphabet scrubber** on the right edge: drag to preview a letter's apps, release to
   jump; tap a letter to jump; double-tap to lock the screen (*Quick Lock*)
-- Swipe up for search, swipe down for notifications, Home toggles search, Back never leaves
-  the launcher
+- Swipe up for search (and, if you turn it on, swipe down too). Otherwise swipe down opens
+  notifications. Home toggles search, Back never leaves the launcher
 - The **Diable button**: set your own tap and swipe-up actions
 
 **Apps**
@@ -70,12 +74,14 @@ It exists because a launcher is the most personal app on a phone, and it should 
   with a call button, optional web suggestions from the provider you choose
 
 **Personalisation**
-- 11 built-in **icon styles** that follow your accent colour, plus any ADW/Nova-compatible
-  **icon pack**, per app if you like
-- Fonts, font size, text colour, theme colours (including Material You), **light and dark**
+- 11 built-in **icon styles** that follow your accent colour, plus any icon pack you install
+  from the Play Store (ADW, Nova, Lawnchair and the other common formats), per app if you like
+- Bundled fonts, plus any `.ttf` or `.otf` you add and fonts shipped inside font apps from
+  the Play Store. Font size, text colour, theme colours (including Material You), **light and dark**
   themes, pitch black, many clock styles
-- Wallpapers from [Openverse](https://openverse.org) with creator credits, or your own
-  photos
+- Wallpapers from [Openverse](https://openverse.org) with creator credits, pictures drawn in
+  the app when a photo will not load, your own photos, and live wallpapers (drift, stars,
+  waves, aurora). Ready-made themes can be downloaded into My Themes and applied later.
 - Ready-made themes, saving your own, and sharing or importing themes as text
 
 **Digital wellbeing**
@@ -103,12 +109,52 @@ Grab the latest signed APK from the
 **[Releases page](https://github.com/Ankitsaroj94/diable_launcher/releases/latest)**,
 install it, press Home and choose **Diable Launcher**.
 
+Use **`diable-launcher-v1.6.apk`** (the standard build) when installing from a browser,
+chat or file manager, including on phones in India. Use **`diable-launcher-v1.6-full.apk`**
+only if you want notification dots, quick replies, the media player and Quick Lock, and
+Play Protect is not blocking that file. The two builds are explained below.
+
 Releases are signed with the project key. You can check an APK with
 `apksigner verify --print-certs diable-launcher-*.apk`; the certificate SHA-256 should be:
 
 ```
 F0:D2:C0:46:67:06:51:3F:03:EA:AA:6F:D9:9A:55:34:42:42:77:B5:C3:FA:1B:53:A3:AC:98:4E:D8:F7:85:BD
 ```
+
+## Play Protect and the two builds
+
+Google Play Protect's enhanced fraud protection is on in India and has also rolled out in
+Singapore, Thailand and Brazil. It **blocks** an install that comes from a web browser,
+messaging app or file manager when the APK's manifest declares any of:
+
+- `READ_SMS`, `RECEIVE_SMS`, `SEND_SMS`, `RECEIVE_MMS` or `RECEIVE_WAP_PUSH`
+- a notification listener (`BIND_NOTIFICATION_LISTENER_SERVICE`)
+- an accessibility service (`BIND_ACCESSIBILITY_SERVICE`)
+
+The dialog is a hard stop — "App blocked to protect your device", with only an OK button
+and no "Install anyway". v1.4 tripped it. Diable does not use SMS. It did declare a
+notification listener (dots, the swipe-right preview, quick replies, media controls and
+Notification Summary) and an accessibility service (Quick Lock, which only calls
+`GLOBAL_ACTION_LOCK_SCREEN` and reads no screen content).
+
+From v1.6 there are two release APKs. They share the application id
+`in.ankitsaroj.diable`. The standard build is version code 8, version name `1.6`.
+The full build is version code 9, version name `1.6-full` (shown in Diable settings),
+so it can replace a standard install and keep your data. The standard APK will not
+install over the full one; uninstall first, or restore a backup, if you need to go
+back.
+
+| Build | Gradle flavor | Release output | What changes |
+|---|---|---|---|
+| standard (default) | `standard` | `app/build/outputs/apk/standard/release/app-standard-release.apk` | No notification listener and no accessibility service. Play Protect can install it. Notification dots, quick replies, the media player, Notification Summary and Quick Lock are absent; the rest of the launcher is unchanged. |
+| full | `full` | `app/build/outputs/apk/full/release/app-full-release.apk` | Those features work, the same way they did in v1.4. Play Protect may block this APK in the regions above. |
+
+Publish the standard file as `diable-launcher-v1.6.apk` and the full file as `diable-launcher-v1.6-full.apk`. With the release keystore configured those files are `app-standard-release.apk` and `app-full-release.apk`. Without it, Gradle leaves them unsigned and adds `-unsigned` to the name.
+
+The services are not in the default merged manifest at all, including permissions pulled
+in by libraries. A Gradle check fails `assembleStandardRelease` if that manifest ever
+declares one of the triggers above, and fails the full assemble if the two services
+disappear.
 
 ## Getting started
 
@@ -118,29 +164,32 @@ Requirements: Android Studio (or the Android SDK command-line tools) and JDK 17+
 ```bash
 git clone https://github.com/Ankitsaroj94/diable_launcher.git
 cd diable_launcher
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleStandardDebug
+adb install -r app/build/outputs/apk/standard/debug/app-standard-debug.apk
 ```
 
 To build a signed release instead, put your own keystore details in
 `~/.gradle/gradle.properties` (`DIABLE_STORE_FILE`, `DIABLE_STORE_PASSWORD`,
-`DIABLE_KEY_ALIAS`, `DIABLE_KEY_PASSWORD`) and run `./gradlew assembleRelease`. Without
-them the release APK is built unsigned.
+`DIABLE_KEY_ALIAS`, `DIABLE_KEY_PASSWORD`) and run `./gradlew assembleStandardRelease`
+(sideload-safe) or `./gradlew assembleFullRelease` (notification access and Quick Lock).
+Without those properties the release APK is built unsigned. `assembleRelease` builds both.
 
-Then press Home and choose **Diable Launcher**, or set it from the command line:
+Opening the app asks you to set it as the default launcher when it is not already.
+You can also press Home and choose **Diable Launcher**, or set it from the command line:
 
 ```bash
 adb shell cmd package set-home-activity in.ankitsaroj.diable/.MainActivity
 ```
 
 ### Optional access
-Some features use special access that Android only grants in system settings. Diable asks
-when you turn on a feature that needs it:
+These exist only in the **full** build. Android grants them in system settings, and Diable
+asks when you turn on a feature that needs one. The standard build explains that the
+feature is not in that install instead of sending you to a settings page where it is not listed.
 
 | Access | Used for |
 |---|---|
-| Notification access | Notification dots, media player, quick replies, Notification Summary |
-| Accessibility service | Quick Lock (locking the screen with a double tap). Reads no screen content |
+| Notification access (full build) | Notification dots, media player, quick replies, Notification Summary |
+| Accessibility service (full build) | Quick Lock (locking the screen with a double tap). Reads no screen content |
 
 ## Privacy
 
@@ -173,6 +222,10 @@ The app only talks to the network for these features:
 | `REQUEST_DELETE_PACKAGES` | The *Uninstall* item in the app menu |
 | `EXPAND_STATUS_BAR` | Swipe down to open notifications |
 
+The full build also registers a notification listener and an accessibility service. Those
+are components, not `<uses-permission>` entries, and they are what Play Protect blocks.
+They are not in the standard APK.
+
 </details>
 
 ## How it's built
@@ -182,7 +235,8 @@ Diable is a single-module Android app written in **Kotlin** with **Jetpack Compo
 ```
 app/src/main/java/in/ankitsaroj/diable/
 ├── data/          App list, prefs (DataStore), icon packs, wallpapers, weather, calendar, media
-├── service/       Notification listener (dots, media, replies, summary), accessibility (Quick Lock)
+├── service/       Notification model shared by both builds. The listener and the
+│                  accessibility service live in src/full; src/standard stubs them out
 ├── navigation/    Compose navigation graph and routes
 └── ui/
     ├── home/      Clock, widgets and widget stacks, pop-ups and app menus, the Diable button
