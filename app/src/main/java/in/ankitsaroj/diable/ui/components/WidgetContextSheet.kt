@@ -6,6 +6,9 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
+import `in`.ankitsaroj.diable.ui.theme.DiableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AspectRatio
@@ -68,6 +71,31 @@ fun WidgetContextSheet(
                     context.startActivity(intent)
                 } ?: Toast.makeText(context, "No widget selected", Toast.LENGTH_SHORT).show()
                 onDismiss()
+            },
+        )
+        Text(
+            text = "Resize widget",
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+            fontSize = 23.sp,
+            color = DiableText,
+        )
+        DiableSettingCard(
+            title = "Smaller clock",
+            subtitle = "${(prefs.clockScale * 100).toInt()}%",
+            icon = Icons.Default.Remove,
+            onClick = {
+                prefsRepo.launchUpdate {
+                    it.copy(clockScale = (prefs.clockScale - 0.1f).coerceAtLeast(0.7f))
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Larger clock",
+            icon = Icons.Default.Add,
+            onClick = {
+                prefsRepo.launchUpdate {
+                    it.copy(clockScale = (prefs.clockScale + 0.1f).coerceAtMost(1.6f))
+                }
             },
         )
         DiableSettingCard(

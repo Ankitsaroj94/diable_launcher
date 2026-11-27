@@ -116,6 +116,8 @@ data class DiablePrefs(
     val usageBreakerMinutes: Int = 15,
     /** "Move Widget": distance from the status bar to the clock/widget block, in dp. */
     val clockTopDp: Int = 125,
+    /** Clock size from Resize widget. 1 = the drawn size. */
+    val clockScale: Float = 1f,
     /** Custom widget height in dp; 0 = the widget's own size. */
     val widgetHeightDp: Int = 0,
     /** Custom widget width in dp; 0 = the full screen width. */
@@ -233,6 +235,7 @@ class PrefsRepository(private val context: Context) {
             prefs[Keys.LEISURE_PACKAGES] = updated.leisurePackages
             prefs[Keys.USAGE_BREAKER_MINUTES] = updated.usageBreakerMinutes
             prefs[Keys.CLOCK_TOP_DP] = updated.clockTopDp
+            prefs[Keys.CLOCK_SCALE] = updated.clockScale
             prefs[Keys.WIDGET_HEIGHT_DP] = updated.widgetHeightDp
             prefs[Keys.WIDGET_WIDTH_DP] = updated.widgetWidthDp
             prefs[Keys.WEATHER_CELSIUS] = updated.weatherCelsius
@@ -316,6 +319,7 @@ class PrefsRepository(private val context: Context) {
         val LEISURE_PACKAGES = stringSetPreferencesKey("leisure_packages")
         val USAGE_BREAKER_MINUTES = intPreferencesKey("usage_breaker_minutes")
         val CLOCK_TOP_DP = intPreferencesKey("clock_top_dp")
+        val CLOCK_SCALE = floatPreferencesKey("clock_scale")
         val WIDGET_HEIGHT_DP = intPreferencesKey("widget_height_dp")
         val WIDGET_WIDTH_DP = intPreferencesKey("widget_width_dp")
         val WEATHER_CELSIUS = booleanPreferencesKey("weather_celsius")
@@ -404,6 +408,7 @@ class PrefsRepository(private val context: Context) {
             leisurePackages = this[Keys.LEISURE_PACKAGES] ?: d.leisurePackages,
             usageBreakerMinutes = this[Keys.USAGE_BREAKER_MINUTES] ?: d.usageBreakerMinutes,
             clockTopDp = this[Keys.CLOCK_TOP_DP] ?: d.clockTopDp,
+            clockScale = this[Keys.CLOCK_SCALE] ?: d.clockScale,
             widgetHeightDp = this[Keys.WIDGET_HEIGHT_DP] ?: d.widgetHeightDp,
             widgetWidthDp = this[Keys.WIDGET_WIDTH_DP] ?: d.widgetWidthDp,
             weatherCelsius = this[Keys.WEATHER_CELSIUS] ?: d.weatherCelsius,
@@ -517,6 +522,7 @@ class PrefsRepository(private val context: Context) {
             o.put("replaceClockWithWidget", prefs.replaceClockWithWidget)
             o.put("fillScreenWidget", prefs.fillScreenWidget)
             o.put("widgetHeightDp", prefs.widgetHeightDp)
+            o.put("clockScale", prefs.clockScale.toDouble())
             o.put("widgetWidthDp", prefs.widgetWidthDp)
             o.put("fontKey", prefs.fontKey)
             o.put("iconStyleKey", prefs.iconStyleKey)
@@ -570,6 +576,7 @@ class PrefsRepository(private val context: Context) {
                 replaceClockWithWidget = o.optBoolean("replaceClockWithWidget", fallback.replaceClockWithWidget),
                 fillScreenWidget = o.optBoolean("fillScreenWidget", fallback.fillScreenWidget),
                 widgetHeightDp = o.optInt("widgetHeightDp", fallback.widgetHeightDp),
+                clockScale = o.optDouble("clockScale", fallback.clockScale.toDouble()).toFloat(),
                 widgetWidthDp = o.optInt("widgetWidthDp", fallback.widgetWidthDp),
                 fontKey = o.optString("fontKey", fallback.fontKey),
                 customFontPath = o.optString("customFontPath").takeIf { it.isNotBlank() && it != "null" },

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.MusicNote
@@ -73,6 +75,7 @@ fun DiableWidgetSheetContent(
     val prefs by repos.prefs.prefsFlow.collectAsState(initial = `in`.ankitsaroj.diable.data.DiablePrefs())
     val scope = rememberCoroutineScope()
     var showCalendarSheet by remember { mutableStateOf(false) }
+    var showResizeSheet by remember { mutableStateOf(false) }
     var showWeatherSheet by remember { mutableStateOf(false) }
     var showCitySearch by remember { mutableStateOf(false) }
     var showAccessDialog by remember { mutableStateOf(false) }
@@ -174,6 +177,86 @@ fun DiableWidgetSheetContent(
         return
     }
 
+    if (showResizeSheet) {
+        BackHandler { showResizeSheet = false }
+        val screenDp = context.resources.displayMetrics.widthPixels /
+            context.resources.displayMetrics.density
+        Column(modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)) {
+            Text(
+                text = "Resize widget",
+                modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
+                fontSize = 23.sp,
+                color = DiableText,
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Remove,
+                title = "Smaller clock",
+                subtitle = "${(prefs.clockScale * 100).toInt()}%",
+                onClick = {
+                    val next = (prefs.clockScale - 0.1f).coerceAtLeast(0.7f)
+                    repos.prefs.launchUpdate { it.copy(clockScale = next) }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Add,
+                title = "Larger clock",
+                subtitle = "Grows the clock on the home screen",
+                onClick = {
+                    val next = (prefs.clockScale + 0.1f).coerceAtMost(1.6f)
+                    repos.prefs.launchUpdate { it.copy(clockScale = next) }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Remove,
+                title = "Shorter",
+                subtitle = "Custom widget height",
+                onClick = {
+                    val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetHeightDp = (base - 40).coerceAtLeast(64), fillScreenWidget = false)
+                    }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.Add,
+                title = "Taller",
+                subtitle = "Custom widget height",
+                onClick = {
+                    val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetHeightDp = (base + 40).coerceAtMost(720), fillScreenWidget = false)
+                    }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.AspectRatio,
+                title = "Narrower",
+                subtitle = "Custom widget width",
+                onClick = {
+                    val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screenDp.toInt()
+                    val next = (base - 48).coerceAtLeast(140)
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetWidthDp = if (next >= screenDp.toInt() - 16) 0 else next)
+                    }
+                },
+            )
+            DiableSettingCard(
+                icon = Icons.Default.AspectRatio,
+                title = "Wider",
+                subtitle = "Custom widget width",
+                onClick = {
+                    val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screenDp.toInt()
+                    val next = (base + 48).coerceAtMost(screenDp.toInt())
+                    repos.prefs.launchUpdate {
+                        it.copy(widgetWidthDp = if (next >= screenDp.toInt() - 16) 0 else next)
+                    }
+                },
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+        return
+    }
+
     if (showCalendarSheet) {
         CalendarSettingsSheet(onDismiss = { showCalendarSheet = false })
         return
@@ -230,6 +313,12 @@ fun DiableWidgetSheetContent(
                 onDismiss()
                 `in`.ankitsaroj.diable.ui.screens.HomeCommands.moveWidget.value = true
             },
+        )
+        DiableSettingCard(
+            icon = Icons.Default.AspectRatio,
+            title = "Resize widget",
+            subtitle = "Clock size, and a custom widget's height and width",
+            onClick = { showResizeSheet = true },
         )
         DiableSettingCard(
             icon = Icons.Default.MusicNote,

@@ -65,6 +65,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -355,17 +356,23 @@ fun AlphabetScrubber(
             }
         }
 
-        // The picked letter's apps, shown while the finger is on the alphabet.
-        if (scrubbing) {
-            // Fixed under the status bar so every row stays on screen while the finger slides.
+        // The picked letter's apps, starting beside that letter so a sideways slide lands on one.
+        if (scrubbing && previewApps.isNotEmpty()) {
+            val rowPx = with(density) { 58.dp.toPx() }
+            val listHeight = previewApps.size * rowPx
+            val anchor = touchRootY ?: boxOrigin.y
+            val minTop = boxOrigin.y
+            val maxTop = (boxOrigin.y + viewportHeight - listHeight).coerceAtLeast(minTop)
+            // First row's center sits on the finger. Near the bottom of the alphabet the
+            // whole list shifts up just enough to stay on screen.
+            val topInRoot = (anchor - rowPx / 2f).coerceIn(minTop, maxTop)
+            val previewShift = (topInRoot - boxOrigin.y).toInt()
             Column(
                 modifier = Modifier
-                    .padding(start = 48.dp, end = listContentEndPadding, top = 72.dp)
+                    .padding(start = 48.dp, end = 80.dp)
+                    .offset { IntOffset(0, previewShift) }
                     .onGloballyPositioned { previewTop = it.positionInRoot().y },
             ) {
-                if (shownLetter != null && shownLetter != STAR && shownLetter != FOOTER) {
-                    LetterHeader(shownLetter.toString(), textColor)
-                }
                 previewApps.forEach { app ->
                     key(app.packageName) {
                         HomeAppRow(
@@ -417,15 +424,8 @@ fun AlphabetScrubber(
                                 val intoList = change.position.x < -with(density) { 24.dp.toPx() }
                                 val appsNow = currentPreview
                                 if (intoList && appsNow.isNotEmpty()) {
-                                    // One row is about 58dp. The letter header, when shown, is ~36dp.
-                                    val letterNow = selectedLetter
-                                    val header = if (letterNow != null && letterNow != STAR && letterNow != FOOTER) {
-                                        with(density) { 36.dp.toPx() }
-                                    } else {
-                                        0f
-                                    }
                                     val row = with(density) { 58.dp.toPx() }
-                                    val index = ((rootY - previewTop - header) / row).toInt()
+                                    val index = ((rootY - previewTop) / row).toInt()
                                     pickedPackage = appsNow.getOrNull(index.coerceIn(0, appsNow.lastIndex))?.packageName
                                 } else {
                                     pickedPackage = null

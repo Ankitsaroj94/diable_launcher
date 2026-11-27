@@ -57,6 +57,8 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
@@ -97,7 +99,6 @@ import `in`.ankitsaroj.diable.ui.home.DiableButton
 import `in`.ankitsaroj.diable.ui.home.DiableButtonSheet
 import `in`.ankitsaroj.diable.ui.home.PopupRequest
 import `in`.ankitsaroj.diable.ui.home.WidgetStack
-import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableCard
 import `in`.ankitsaroj.diable.ui.theme.DiableTextMuted
@@ -436,7 +437,15 @@ fun HomeScreen(
                             )
                         }
                     } else {
+                        val clockScale = prefs.clockScale.coerceIn(0.7f, 1.6f)
                         ClockWidget(
+                            modifier = Modifier
+                                .padding(bottom = ((clockScale - 1f) * 96f).coerceAtLeast(0f).dp)
+                                .graphicsLayer {
+                                    scaleX = clockScale
+                                    scaleY = clockScale
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                },
                             clockStyleId = prefs.clockStyleId,
                             showBattery = prefs.showBatteryPercentage,
                             showWeather = prefs.weatherEnabled,
