@@ -78,7 +78,8 @@ class WallpaperRepository(private val context: Context) {
             val arr = JSONObject(body).optJSONArray("results") ?: return emptyList()
             (0 until arr.length()).mapNotNull { i ->
                 val o = arr.optJSONObject(i) ?: return@mapNotNull null
-                val full = o.optString("url").takeIf { it.startsWith("http") } ?: return@mapNotNull null
+                val full = o.optString("url").takeIf { it.startsWith("http") && it.looksLikeImage() }
+                    ?: return@mapNotNull null
                 val apiThumb = o.optString("thumbnail").takeIf { it.startsWith("http") }
                 WebWallpaper(
                     id = o.optString("id"),
@@ -111,6 +112,9 @@ class WallpaperRepository(private val context: Context) {
                 // setBitmap fits rather than fills, which letterboxes the wallpaper with
                 // black bars. Crop to the screen's aspect ratio first.
                 val bitmap = downloaded.cropToScreenAspect(context)
+                val file = java.io.File(context.filesDir, "wallpapers/current.jpg")
+                file.parentFile?.mkdirs()
+                file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, it) }
                 WallpaperManager.getInstance(context).setBitmap(bitmap)
                 // Measured here because reading the wallpaper back later needs storage
                 // permission, and the whole-image average says nothing about the strip
@@ -118,7 +122,7 @@ class WallpaperRepository(private val context: Context) {
                 val topLuminance = bitmap.topStripLuminance()
                 if (bitmap !== downloaded) downloaded.recycle()
                 bitmap.recycle()
-                AppliedWallpaper("openverse:${wallpaper.id}", topLuminance)
+                AppliedWallpaper("file:${file.absolutePath}", topLuminance)
             }.onFailure {
                 android.util.Log.w("WallpaperRepo", "applyWallpaper failed", it)
             }.getOrNull()
@@ -188,6 +192,12 @@ private val FLICKR = Regex("""^(https://live\.staticflickr\.com/.+)_[a-z]\.(jpg|
  * showed blanks and crawled. The two providers that dominate results expose predictable
  * resize URLs, so use those and fall back only when the shape is unfamiliar.
  */
+private fun String.looksLikeImage(): Boolean {
+    val path = substringBefore('?').lowercase()
+    return !path.endsWith(".mp4") && !path.endsWith(".webm") &&
+        !path.endsWith(".mov") && !path.endsWith(".gifv")
+}
+
 private fun scaledUrl(sourceUrl: String, width: Int): String? {
     WIKIMEDIA.find(sourceUrl)?.let { m ->
         val (base, d1, d2, name) = m.destructured

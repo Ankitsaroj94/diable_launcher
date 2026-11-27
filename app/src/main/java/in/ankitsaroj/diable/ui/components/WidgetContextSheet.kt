@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.OpenWith
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -70,10 +71,52 @@ fun WidgetContextSheet(
             },
         )
         DiableSettingCard(
-            title = "Resize widget",
-            subtitle = "Drag the bar under the widget. Arrows change the width.",
+            title = "Shorter",
+            subtitle = "Reduce the widget height",
+            icon = Icons.Default.Remove,
+            onClick = {
+                val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                prefsRepo.launchUpdate {
+                    it.copy(widgetHeightDp = (base - 40).coerceAtLeast(64), fillScreenWidget = false)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Taller",
+            subtitle = "Increase the widget height",
+            icon = Icons.Default.Add,
+            onClick = {
+                val base = if (prefs.widgetHeightDp > 0) prefs.widgetHeightDp else 180
+                prefsRepo.launchUpdate {
+                    it.copy(widgetHeightDp = (base + 40).coerceAtMost(720), fillScreenWidget = false)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Narrower",
             icon = Icons.Default.AspectRatio,
-            onClick = { onDismiss() },
+            onClick = {
+                val screen = context.resources.displayMetrics.widthPixels /
+                    context.resources.displayMetrics.density
+                val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screen.toInt()
+                val next = (base - 48).coerceAtLeast(140)
+                prefsRepo.launchUpdate {
+                    it.copy(widgetWidthDp = if (next >= screen.toInt() - 16) 0 else next)
+                }
+            },
+        )
+        DiableSettingCard(
+            title = "Wider",
+            icon = Icons.Default.AspectRatio,
+            onClick = {
+                val screen = context.resources.displayMetrics.widthPixels /
+                    context.resources.displayMetrics.density
+                val base = if (prefs.widgetWidthDp > 0) prefs.widgetWidthDp else screen.toInt()
+                val next = (base + 48).coerceAtMost(screen.toInt())
+                prefsRepo.launchUpdate {
+                    it.copy(widgetWidthDp = if (next >= screen.toInt() - 16) 0 else next)
+                }
+            },
         )
         DiableSettingCard(
             title = "Move",

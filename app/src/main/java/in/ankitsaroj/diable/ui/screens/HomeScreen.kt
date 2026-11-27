@@ -98,8 +98,10 @@ import `in`.ankitsaroj.diable.ui.home.DiableButtonSheet
 import `in`.ankitsaroj.diable.ui.home.PopupRequest
 import `in`.ankitsaroj.diable.ui.home.WidgetStack
 import `in`.ankitsaroj.diable.ui.theme.DiableAccent
+import `in`.ankitsaroj.diable.ui.theme.DiableAccent
 import `in`.ankitsaroj.diable.ui.theme.DiableCard
 import `in`.ankitsaroj.diable.ui.theme.DiableTextMuted
+import `in`.ankitsaroj.diable.ui.theme.SavedWallpaperImage
 import `in`.ankitsaroj.diable.ui.theme.wallpaperBackground
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -318,7 +320,7 @@ fun HomeScreen(
                 HomeCommands.moveWidget.value = false
             }
             popup != null -> popup = null
-            scrolled -> scope.launch { listState.animateScrollToItem(0) }
+            scrolled -> scope.launch { listState.scrollToItem(0) }
         }
     }
 
@@ -361,8 +363,9 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // The window is transparent with windowShowWallpaper, so the live system
-            // wallpaper shows through unless the user picked a gradient in Themes.
+            // Gradients paint here. Saved photos paint as an image so a failed system
+            // wallpaper doesn't leave a black home screen. Otherwise the window is
+            // transparent and the system wallpaper shows through.
             .wallpaperBackground(prefs.wallpaperUri)
             .then(
                 if (prefs.dimWallpaper) {
@@ -385,6 +388,11 @@ fun HomeScreen(
             )
             .onGloballyPositioned { originY = it.positionInRoot().y },
     ) {
+        val savedWallpaper = prefs.wallpaperUri?.removePrefix("file:")
+            ?.takeIf { prefs.wallpaperUri?.startsWith("file:") == true }
+        if (savedWallpaper != null) {
+            SavedWallpaperImage(savedWallpaper, Modifier.fillMaxSize())
+        }
         // Every home label sits directly on the wallpaper, so give them all a soft
         // shadow. Dimming alone cannot win against a high-contrast photo.
         CompositionLocalProvider(
@@ -463,39 +471,38 @@ fun HomeScreen(
                                     onLongPress = openWidgetMenu,
                                     modifier = widgetFill,
                                 )
+                                WidgetResizeBar(
+                                    modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 24.dp, vertical = 4.dp),
+                                    onHeightDrag = { deltaDp ->
+                                        val current = dragWidgetHeight ?: widgetHeightDp.toFloat()
+                                        dragWidgetHeight = (current + deltaDp).coerceIn(64f, screenHeightDp * 0.85f)
+                                    },
+                                    onHeightDragEnd = {
+                                        val committed = dragWidgetHeight?.toInt()
+                                        if (committed != null) {
+                                            prefsRepo.launchUpdate {
+                                                it.copy(widgetHeightDp = committed, fillScreenWidget = false)
+                                            }
+                                        }
+                                        dragWidgetHeight = null
+                                    },
+                                    onNarrower = {
+                                        val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
+                                        val next = (current - 32).coerceAtLeast(140)
+                                        val stored = if (next >= screenWidthDp - 16) 0 else next
+                                        dragWidgetWidth = stored
+                                        prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
+                                    },
+                                    onWider = {
+                                        val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
+                                        val next = (current + 32).coerceAtMost(screenWidthDp)
+                                        val stored = if (next >= screenWidthDp - 16) 0 else next
+                                        dragWidgetWidth = stored
+                                        prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
+                                    },
+                                )
                             }
                         }
-                    }
-                    if (widgetIds.isNotEmpty()) {
-                        WidgetResizeBar(
-                            onHeightDrag = { deltaDp ->
-                                val current = dragWidgetHeight ?: widgetHeightDp.toFloat()
-                                dragWidgetHeight = (current + deltaDp).coerceIn(64f, screenHeightDp * 0.85f)
-                            },
-                            onHeightDragEnd = {
-                                val committed = dragWidgetHeight?.toInt()
-                                if (committed != null) {
-                                    prefsRepo.launchUpdate {
-                                        it.copy(widgetHeightDp = committed, fillScreenWidget = false)
-                                    }
-                                }
-                                dragWidgetHeight = null
-                            },
-                            onNarrower = {
-                                val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
-                                val next = (current - 32).coerceAtLeast(140)
-                                val stored = if (next >= screenWidthDp - 16) 0 else next
-                                dragWidgetWidth = stored
-                                prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
-                            },
-                            onWider = {
-                                val current = if (widgetWidthDp > 0) widgetWidthDp else screenWidthDp
-                                val next = (current + 32).coerceAtMost(screenWidthDp)
-                                val stored = if (next >= screenWidthDp - 16) 0 else next
-                                dragWidgetWidth = stored
-                                prefsRepo.launchUpdate { it.copy(widgetWidthDp = stored) }
-                            },
-                        )
                     }
                     if (moveMode) {
                         MoveWidgetHandle(
@@ -766,14 +773,14 @@ private fun WidgetResizeBar(
     onHeightDragEnd: () -> Unit,
     onNarrower: () -> Unit,
     onWider: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     androidx.compose.foundation.layout.Row(
-        modifier = Modifier
-            .padding(top = 8.dp, end = 24.dp)
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(DiableCard.copy(alpha = 0.9f))
+            .background(DiableAccent.copy(alpha = 0.92f))
             .padding(horizontal = 4.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -781,7 +788,7 @@ private fun WidgetResizeBar(
             androidx.compose.material3.Icon(
                 Icons.Default.Remove,
                 contentDescription = "Narrower widget",
-                tint = DiableText,
+                tint = Color(0xFF132569),
             )
         }
         Box(
@@ -801,7 +808,7 @@ private fun WidgetResizeBar(
         ) {
             androidx.compose.material3.Text(
                 text = "Drag to resize",
-                color = DiableAccentText,
+                color = Color(0xFF132569),
                 fontSize = 14.sp,
             )
         }
@@ -809,7 +816,7 @@ private fun WidgetResizeBar(
             androidx.compose.material3.Icon(
                 Icons.Default.Add,
                 contentDescription = "Wider widget",
-                tint = DiableText,
+                tint = Color(0xFF132569),
             )
         }
     }

@@ -1,6 +1,7 @@
 package `in`.ankitsaroj.diable.ui.screens
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -79,6 +80,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun ThemeCarouselScreen(navController: NavController) {
+    BackHandler { navController.popBackStack() }
     val repos = LocalDiableRepos.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
